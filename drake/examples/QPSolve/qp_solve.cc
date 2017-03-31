@@ -7,59 +7,88 @@
 int main(int argc, char* argv[]) {
   using namespace drake;
 
-  std::unique_ptr<drake::solvers::MathematicalProgram> prog;
-  drake::solvers::GurobiSolver solver;
-  drake::solvers::VectorXDecisionVariable basis;
-  drake::solvers::VectorXDecisionVariable x_decision;
-  
-  Eigen::VectorXd solution;
+  // These two vectors are constants which will shape
+  // the solution
+  Eigen::VectorXd pa1_vec(2);
+  Eigen::VectorXd pa2_vec(2);
+
+  // choose some values
+  pa1_vec(0) = -1.0;
+  pa1_vec(1) =  2.0;
+  pa2_vec(0) =  1.0;
+  pa2_vec(1) =  4.0;
+
 
   std::cout << "`Hello, World!`, in Drake!" << std::endl;
   
 
+  // Solver boilerplate
+  std::unique_ptr<drake::solvers::MathematicalProgram> prog;
+  drake::solvers::GurobiSolver solver;
+  drake::solvers::VectorXDecisionVariable basis;
+  drake::solvers::VectorXDecisionVariable x_decision;
+  // std::shared_ptr<drake::solvers::QuadraticConstraint> qca1;
+  Eigen::VectorXd solution;
+
   prog.reset(new solvers::MathematicalProgram());
-  x_decision = prog->NewContinuousVariables(2, "x");
-
-  // Some constraints
-  Eigen::MatrixXd a_mat(2,2);
-  Eigen::VectorXd b_mat(2,1);
-
-  a_mat(0,0) = 1;
-  a_mat(0,1) = 1;
-  a_mat(1,0) = -1;
-  a_mat(1,1) = -1;
-
-  b_mat(0,0) = 1;
-  b_mat(1,0) = -1;
-
-  prog->AddLinearEqualityConstraint(a_mat,b_mat,x_decision);
-
-  // Quadratic constraint
-  // drake::solvers::QuadraticConstraint* cost;
-
-//  
-//  eq_dynamics_ =
-//    prog_
-//        ->AddLinearEqualityConstraint(
-//            MatrixX<double>::Zero(1, 2), // num_eqns, num_vars
-//            VectorX<double>::Zero(1), {p_})
-//        .get();
-//
-//  eq_dynamics_->set_description("dynamics eq");
   
-  // Quadratic cost
-  Eigen::MatrixXd q_mat(2,2);
-  Eigen::VectorXd b_vec(2);
+  // Decision variable x: [px py la1 la2 [..]]
+  x_decision = prog->NewContinuousVariables(4, "x");
+  
+  // Quadratic cost: (la1 + la2)^2
+  Eigen::MatrixXd q_mat(4,4);
+  Eigen::VectorXd b_vec(4);
 
   // b = [0, 0]'
   b_vec.setZero();
 
-  // Q = [1,0; 0,1]
+  // Q = 
+  //   [[0,0,0,0]
+  //    [0,0,0,0]
+  //    [0,0,1,1]
+  //    [0,0,1,1]]
   q_mat.setZero();
-  q_mat(0,0) = 1;
-  q_mat(1,1) = 1;
+  q_mat(2,2) = 1;
+  q_mat(2,3) = 1;
+  q_mat(3,2) = 1;
+  q_mat(3,3) = 1;
 
-  prog->AddQuadraticCost(q_mat, b_vec, x_decision).get();
+  prog->AddQuadraticCost(q_mat, b_vec, x_decision);
+
+  // Some lorentz cone constraints:
+  
+  //  la1^2 >= (p - pa1)^2
+  Eigen::MatrixXd aca1_mat(3,4);
+  Eigen::VectorXd bca1_vec(3);
+
+  aca1_mat.setZero();
+  aca1_mat(0,2) = 1;
+  aca1_mat(1,0) = 1;
+  aca1_mat(2,1) = 1;
+
+  bca1_vec.setZero();
+  bca1_vec(0) = 0.0;
+  bca1_vec(1) = -pa1_vec(0);
+  bca1_vec(2) = -pa1_vec(1);
+
+  prog->AddLorentzConeConstraint(aca1_mat, bca1_vec, x_decision);
+
+  //  la2^2 >= (p - pa2)^2
+  Eigen::MatrixXd aca2_mat(3,4);
+  Eigen::VectorXd bca2_vec(3);
+
+  aca2_mat.setZero();
+  aca2_mat(0,3) = 1;
+  aca2_mat(1,0) = 1;
+  aca2_mat(2,1) = 1;
+
+  bca2_vec.setZero();
+  bca2_vec(0) = 0.0;
+  bca2_vec(1) = -pa2_vec(0);
+  bca2_vec(2) = -pa2_vec(1);
+
+  prog->AddLorentzConeConstraint(aca2_mat, bca2_vec, x_decision);
+
   
   // Solve!    
   solvers::SolutionResult result = solver.Solve(*(prog.get()));
