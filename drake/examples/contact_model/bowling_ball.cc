@@ -63,6 +63,7 @@ DEFINE_bool(playback, true, "If true, loops playback of simulation");
 
 // Bowling ball rolled down a conceptual lane to strike pins.
 int main(int argc, char**argv) {
+
   using std::cerr;
   using std::cout;
 
@@ -77,12 +78,19 @@ int main(int argc, char**argv) {
   cout << "\tdissipation:      " << FLAGS_dissipation << "\n";
   cout << "\tpin count:        " << FLAGS_pin_count << "\n";
 
+  cout << "Kind of about to cerr" << "\n";
   if (FLAGS_pin_count < 0 || FLAGS_pin_count > 10) {
+    cout << "About to cerr";
     cerr << "Bad number of pins specified.  Must be in the range [0, 10]\n";
     return 1;
   }
 
+
+  cout << "About to Build" << "\n";
+
   DiagramBuilder<double> builder;
+
+  cout << "About to parse URDF" << "\n";
 
   // Create RigidBodyTree.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
@@ -90,12 +98,16 @@ int main(int argc, char**argv) {
       drake::GetDrakePath() + "/examples/contact_model/bowling_ball.urdf",
       kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
 
+  cout << "About to parse some more URDFs" << "\n";
+
   for (int i = 0; i < FLAGS_pin_count; ++i) {
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/contact_model/pin.urdf", kQuaternion,
         nullptr /* weld to frame */, tree_ptr.get());
   }
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
+
+  cout << "About to extract the plant" << "\n";
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
@@ -105,6 +117,8 @@ int main(int argc, char**argv) {
   plant.set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
   plant.set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
   const auto& tree = plant.get_rigid_body_tree();
+
+  cout << "About to LCM" << "\n";
 
   // LCM communication.
   DrakeLcm lcm;
@@ -178,6 +192,8 @@ int main(int argc, char**argv) {
   plant.set_state_vector(plant_context, initial_state);
 
   simulator->StepTo(FLAGS_sim_duration);
+
+  cout << "About to playback" << "\n";
 
   while (FLAGS_playback) visualizer_publisher->ReplayCachedSimulation();
 
