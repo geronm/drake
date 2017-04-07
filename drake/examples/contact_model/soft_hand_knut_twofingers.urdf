@@ -1,0 +1,379 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="SimplePulley">
+
+  <material name="skeleton">
+    <color rgba=".7 .7 .7 0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="1 .5 0 0"/>
+  </material>
+  
+  <material name="black">
+    <color rgba="0 0 0 0"/>
+  </material>
+
+  <material name="bone">
+    <color rgba="1 1 .6 0"/>
+  </material>
+  
+  <link name="base">
+    <visual>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <box size="1 6 1"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="knut">
+    <inertial>
+      <mass value="2"/>
+      <inertia ixx="0.506667" ixy="0.000000" ixz="0.000000" iyy="1.000000" iyz="0.000000" izz="0.506667" />
+    </inertial>
+    <visual>
+      <material>
+        <color rgba=".8 0 0 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="2"/>
+      </geometry>
+    </visual>
+    
+        <!-- add points for all the vertices of the hexagon-->
+    <visual>
+      <origin xyz="0 -1 1.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-.866 -.5 1.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-.866 .5 1.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0 1 1.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz=".866 .5 1.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz=".866 -.5 1.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="2"/>
+      </geometry>
+    </visual>
+  </link> 
+
+  <joint name="knut_rotated" type="continuous">
+    <origin xyz="10.0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="knut"/>
+    <dynamics damping="0.5"/>
+  </joint>
+
+
+  <link name="finger1_paddle">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 1.1"/>
+      <geometry>
+        <box size="4 .2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="2 0 1.1"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-2 0 1.1"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="finger1_proximal">
+    <visual>
+      <origin xyz="7.5 0 1"/>
+      <geometry>
+        <box size="15 .2 .2"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="finger1_proximal" type="continuous">
+    <origin xyz="0 2 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger1_proximal"/>
+    <dynamics damping="0"/>
+  </joint>
+  <link name="finger1_linear" />
+  <joint name="finger1_linear" type="prismatic">
+    <origin xyz="10.0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="finger1_proximal"/>
+    <child link="finger1_linear"/>
+    <dynamics damping="0"/>
+  </joint>
+  <joint name="finger1_paddle" type="continuous">
+    <origin xyz="0 0 0" rpy="0 0 3.1416"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger1_linear"/>
+    <child link="finger1_paddle"/>
+  </joint>
+
+  <link name="finger1_tensioner">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+    <visual> 
+      <origin xyz="-.45 0 1.2" rpy="0 0 0"/>
+      <geometry>
+        <box size=".8 .01 .2"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="finger1_counterweight">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+  </link>
+
+
+  
+  <transmission type="SimpleTransmission" name="finger1_proximal">
+    <joint name="finger1_proximal"/>
+    <actuator name="finger1_proximal"/>
+  </transmission>
+
+  <!--
+  <transmission type="SimpleTransmission" name="finger1_linear">
+    <joint name="finger1_linear"/>
+    <actuator name="finger1_linear"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger1_paddle">
+    <joint name="finger1_paddle"/>
+    <actuator name="finger1_paddle"/>
+  </transmission>
+  -->
+  <joint name="finger1_tensioner" type="revolute">
+    <origin xyz="-3.0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger1_paddle"/>
+    <child link="finger1_tensioner"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+  <joint name="finger1_counterweight" type="revolute">
+    <origin xyz="3.0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger1_paddle"/>
+    <child link="finger1_counterweight"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+  <force_element name="finger1_tensioner_spring">
+    <torsional_spring rest_angle="0" stiffness="0.8">
+      <joint name="finger1_tensioner"/>
+    </torsional_spring>
+  </force_element>
+
+
+  <link name="finger2_paddle">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 1.1"/>
+      <geometry>
+        <box size="4 .2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="2 0 1.1"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-2 0 1.1"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="finger2_proximal">
+    <visual>
+      <origin xyz="7.5 0 1"/>
+      <geometry>
+        <box size="15 .2 .2"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="finger2_proximal" type="continuous">
+    <origin xyz="0 -2 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger2_proximal"/>
+    <dynamics damping="0"/>
+  </joint>
+  <link name="finger2_linear" />
+  <joint name="finger2_linear" type="prismatic">
+    <origin xyz="10.0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="finger2_proximal"/>
+    <child link="finger2_linear"/>
+    <dynamics damping="0"/>
+  </joint>
+  <joint name="finger2_paddle" type="continuous">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger2_linear"/>
+    <child link="finger2_paddle"/>
+  </joint>
+
+  <link name="finger2_tensioner">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+    <visual> 
+      <origin xyz="-.45 0 1.2" rpy="0 0 0"/>
+      <geometry>
+        <box size=".8 .01 .2"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="finger2_counterweight">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!--
+  <transmission type="SimpleTransmission" name="finger2_proximal">
+    <joint name="finger2_proximal"/>
+    <actuator name="finger2_proximal"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger2_linear">
+    <joint name="finger2_linear"/>
+    <actuator name="finger2_linear"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger2_paddle">
+    <joint name="finger2_paddle"/>
+    <actuator name="finger2_paddle"/>
+  </transmission>
+  -->
+
+  <joint name="finger2_tensioner" type="revolute">
+    <origin xyz="-3.0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger2_paddle"/>
+    <child link="finger2_tensioner"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+  <joint name="finger2_counterweight" type="revolute">
+    <origin xyz="3.0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger2_paddle"/>
+    <child link="finger2_counterweight"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+  <force_element name="finger2_tensioner_spring">
+    <torsional_spring rest_angle="0" stiffness="0.8">
+      <joint name="finger2_tensioner"/>
+    </torsional_spring>
+  </force_element>
+
+  <!-- current form tethers the two paddles together, hooking around one's edge to
+       cause it to torque -->
+  <cable name="finger2_cable" min_length="3.23" max_length="3.23"> 
+    <terminator link="finger2_paddle" xyz="0 0 0" />
+    <pulley link="finger1_paddle" xyz="1 1 0" radius="0" axis="0 0 1"/>
+    <terminator link="finger1_paddle" xyz="0 0 0"/>
+  </cable>
+
+  <!--
+  <cable name="finger1_cable" min_length="6.3" max_length="6.3"> 
+    <terminator link="finger1_paddle" xyz="2 1 2" />
+    <pulley link="knut" xyz="0 1 2" axis="0 0 -1" number_of_faces="6"/>
+    <pulley link="finger1_paddle" xyz="-2 1 2" radius="0"/>
+    <pulley link="finger1_paddle" xyz="-3 0 2" radius="1" axis="0 0 1"/>
+    <terminator link="finger1_tensioner" xyz="-1.02 0 2"/>
+  </cable>
+
+  <cable name="finger2_cable" min_length="6.3" max_length="6.3"> 
+    <terminator link="finger2_paddle" xyz="2 1 2" />
+    <pulley link="knut" xyz="0 1 2" axis="0 0 -1" number_of_faces="6"/>
+    <pulley link="finger2_paddle" xyz="-2 1 2" radius="0"/>
+    <pulley link="finger2_paddle" xyz="-3 0 2" radius="1" axis="0 0 1"/>
+    <terminator link="finger2_tensioner" xyz="-1.02 0 2"/>
+  </cable>
+  -->
+  <!-- <pulley link="knut" xyz="0 1 2" axis="0 0 -1" number_of_faces="6"/> -->
+
+</robot>
