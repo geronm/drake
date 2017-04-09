@@ -741,6 +741,114 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
+void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
+                int model_instance_id) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && (std::strcmp(attr, "true") == 0)) return;
+
+  // Parses the parent and child link names.
+  // string name, type, parent_name, child_name;
+  // ParseJointKeyParams(node, name, type, parent_name, child_name);
+
+  std::cout << "Parsed a cable!" << std::endl;
+
+  std::vector<string> pulleys;
+
+  for (XMLElement* pulley_node = node->FirstChildElement("pulley");
+       pulley_node; pulley_node = pulley_node->NextSiblingElement("pulley")) {
+    // Checks for the existence of an attribute named "drake_ignore". If such an
+    // attribute exists and has a value of "true", ignores the current joint.
+    {
+      const char* attr = pulley_node->Attribute("drake_ignore");
+      if (attr && (std::strcmp(attr, "true") == 0)) {
+        continue;
+      }
+    }
+
+    // Obtains the joint's name.
+    const char* attr = pulley_node->Attribute("link");
+    if (!attr) {
+      throw std::runtime_error(
+          "RigidBodyTreeURDF.cpp: GetActuatorEffortLimit: ERROR: Joint tag is "
+          "missing name attribute.");
+    }
+    string link = string(attr);
+
+    pulleys.push_back(link);
+  }
+
+
+  std::cout << " Pulleys:" << std::endl;
+  for (std::vector<string>::iterator it = pulleys.begin(); it != pulleys.end(); ++it)
+    std::cout << "   " << *it << std::endl;
+
+  // Checks if this joint connects to the world and, if so, terminates this
+  // method call. This is because joints that connect to the world are processed
+  // separately.
+//  if (parent_name == string(RigidBodyTreeConstants::kWorldName)) return;
+//
+//  int parent_index = tree->FindBodyIndex(parent_name, model_instance_id);
+//  if (parent_index < 0) {
+//    throw runtime_error(
+//        "parser_urdf.cc: ParseJoint: ERROR: Could not find "
+//        "parent link named \"" +
+//        parent_name + "\" with model instance ID " +
+//        std::to_string(model_instance_id) + ".");
+//  }
+//
+//  int child_index = tree->FindBodyIndex(child_name, model_instance_id);
+//  if (child_index < 0) {
+//    throw runtime_error(
+//        "parser_urdf.cc: ParseJoint: ERROR: Could not find "
+//        "child link named \"" +
+//        child_name + "\" with model instance ID " +
+//        std::to_string(model_instance_id) + ".");
+//  }
+//
+//  Isometry3d transform_to_parent_body = Isometry3d::Identity();
+//  XMLElement* origin = node->FirstChildElement("origin");
+//  if (origin) {
+//    originAttributesToTransform(origin, transform_to_parent_body);
+//  }
+//
+//  Vector3d axis(1, 0, 0);
+//  XMLElement* axis_node = node->FirstChildElement("axis");
+//  if (axis_node && type.compare("fixed") != 0 &&
+//      type.compare("floating") != 0) {
+//    parseVectorAttribute(axis_node, "xyz", axis);
+//    if (axis.norm() < 1e-8)
+//      throw runtime_error("ERROR: axis is zero.  don't do that");
+//    axis.normalize();
+//  }
+//
+//  // now construct the actual joint (based on its type)
+//  DrakeJoint* joint = nullptr;
+//
+//  if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
+//    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
+//        new RevoluteJoint(name, transform_to_parent_body, axis);
+//    SetDynamics(node, fjoint);
+//    SetLimits(node, fjoint);
+//    joint = fjoint;
+//  } else if (type.compare("fixed") == 0) {
+//    joint = new FixedJoint(name, transform_to_parent_body);
+//  } else if (type.compare("prismatic") == 0) {
+//    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
+//        new PrismaticJoint(name, transform_to_parent_body, axis);
+//    SetDynamics(node, fjoint);
+//    SetLimits(node, fjoint);
+//    joint = fjoint;
+//  } else if (type.compare("floating") == 0) {
+//    joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+//  } else {
+//    throw runtime_error("ERROR: Unrecognized joint type: " + type);
+//  }
+//
+//  unique_ptr<DrakeJoint> joint_unique_ptr(joint);
+//  tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
+//  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
+}
+
 /* Searches through the URDF document looking for the effort limits of a joint
  * named @p joint_name. If the joint is not found, throws an
  * `std::runtime_error` exception. If the limits of the joint are not specified,
@@ -1130,6 +1238,11 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame"))
     ParseFrame(tree, frame_node, model_instance_id);
+
+  // Parses the model's cable elements.
+  for (XMLElement* cable_node = node->FirstChildElement("cable"); cable_node;
+       cable_node = cable_node->NextSiblingElement("cable"))
+    ParseCable(tree, cable_node, model_instance_id);
 
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
