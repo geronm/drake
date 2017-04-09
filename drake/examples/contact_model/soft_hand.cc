@@ -29,6 +29,7 @@ during stiction).
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/multibody/constraint/rigid_body_dynamic_constraint.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -82,8 +83,26 @@ std::unique_ptr<RigidBodyTreed> BuildTestTree() {
 int main() {
   systems::DiagramBuilder<double> builder;
 
+  // std::unique_ptr<RigidBodyTreed> rbt = BuildTestTree();
+
+//  std::set<int> id_set;
+//  CableDynamicConstraint cableConstraint((plant->get_rigid_body_tree()).get(), id_set);
+//  std::cout << "Output: " << cableConstraint.getNumPositionConstraints() << std::endl;
+
+  // auto tree = std::make_unique<RigidBodyTree<double>>();
+
+//  systems::RigidBodyPlant<double>* plant =
+//      builder.AddSystem<systems::RigidBodyPlant<double>>(BuildTestTree());
+
+  auto tree = BuildTestTree();
+  
+  std::set<int> id_set;
+  CableDynamicConstraint<double> cableConstraint(tree.get(), id_set);
+  std::cout << "Output: " << cableConstraint.getNumPositionConstraints() << std::endl;
+
+
   systems::RigidBodyPlant<double>* plant =
-      builder.AddSystem<systems::RigidBodyPlant<double>>(BuildTestTree());
+      builder.AddSystem<systems::RigidBodyPlant<double>>( std::move(tree) );
 
   // Command-line specified contact parameters.
   std::cout << "Contact properties:\n";

@@ -64,6 +64,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rigid_body_dynamic_constraint",
+    srcs = ["constraint/rigid_body_dynamic_constraint.cc"],
+    hdrs = ["constraint/rigid_body_dynamic_constraint.h"],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
     name = "kinematics_cache",
     srcs = ["kinematics_cache.cc"],
     hdrs = [
