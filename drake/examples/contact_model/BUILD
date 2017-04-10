@@ -72,6 +72,7 @@ drake_cc_binary(
     deps = [
         "//drake/common:drake_path",
         "//drake/lcm",
+        "//drake/common",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
