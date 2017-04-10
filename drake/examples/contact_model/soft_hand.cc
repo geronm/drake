@@ -116,7 +116,15 @@ int main() {
   q(9) = 1.0;
   q(10) = 1.0;
 
-  std::cout << "q: " << std::endl << q << std::endl;
+  std::cout << "q.transpose(): " << std::endl << q.transpose() << std::endl;
+
+  Eigen::VectorXd v((tree.get())->get_num_velocities());
+  v.setZero();
+  for (int i=0; i < (tree.get())->get_num_velocities(); i++) {
+    v(i) = (1 + i * 53) % 7;
+  }
+
+  std::cout << "v.transpose(): " << std::endl << v.transpose() << std::endl;
 
   // Test some dynamic constraints stuff out on the tree.
   // for (int i=0; i<=11; i++) {
@@ -128,7 +136,7 @@ int main() {
 
   {
 
-    KinematicsCache<double> cache = (tree.get())->doKinematics(q);
+    KinematicsCache<double> cache = (tree.get())->doKinematics(q, v, true);
 
     // This is a cable stretching from one tensioner to the other, then in an L-shape to the left thingy
     double cable_length = 0;
@@ -181,14 +189,18 @@ int main() {
 
     std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
     std::cout << "  cableConstraint.getNumPositionConstraints() -> " << cableConstraint.getNumPositionConstraints() << std::endl;
-    std::cout << "  cableConstraint.positionConstraints() -> " << cableConstraint.positionConstraints(cache) << std::endl;
-    std::cout << "  cableConstraint.positionConstraintsJacobian() -> " << cableConstraint.positionConstraintsJacobian(cache, false) << std::endl;
+    std::cout << "  cableConstraint.positionConstraints(cache) -> " << cableConstraint.positionConstraints(cache) << std::endl;
+    std::cout << "  cableConstraint.positionConstraintsJacobian(cache,false) -> " << cableConstraint.positionConstraintsJacobian(cache, false) << std::endl;
+    std::cout << "  cableConstraint.positionConstraintsJacobian(cache,true)  -> " << cableConstraint.positionConstraintsJacobian(cache, true) << std::endl;
+    std::cout << "  cableConstraint.positionConstraintsJacDotTimesV(cache)   -> " << cableConstraint.positionConstraintsJacDotTimesV(cache) << std::endl;
 
     // Empirically verify gradients
+
+    // Verify Jacobian
     auto phi_q = cableConstraint.positionConstraints(cache);
     
     std::cout << "Empirical gradients: " << std::endl;
-    double h=.01;
+    double h=.00001;
     for (int i=0; i<11; i++) {
       q(i) += h;
       cache = (tree.get())->doKinematics(q);
@@ -199,6 +211,18 @@ int main() {
       q(i) -= h;
     }
     
+    // Verify phi-double-dot
+    cache = (tree.get())->doKinematics(q);
+    auto phi_q_0 = cableConstraint.positionConstraints(cache);
+    q += v*h;
+    cache = (tree.get())->doKinematics(q);
+    auto phi_q_h = cableConstraint.positionConstraints(cache);
+    q += v*h;
+    cache = (tree.get())->doKinematics(q);
+    auto phi_q_2h = cableConstraint.positionConstraints(cache);
+
+    std::cout << "Empirial phi-double-dot: " << ((phi_q_2h - 2*phi_q_h + phi_q_0)/h/h) << std::endl;    
+
   }
 
   // Alright, let's get to simulating
