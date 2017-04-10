@@ -2926,7 +2926,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
   CheckCacheValidity(cache);
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size() + 1 * constraint_cables.size(), 1);
   for (size_t i = 0; i < loops.size(); ++i) {
     {  // position constraint
       auto ptA_in_B = transformPoints(cache, Vector3d::Zero(),
@@ -2951,7 +2951,7 @@ RigidBodyTree<T>::positionConstraintsJacobian(
     const KinematicsCache<Scalar>& cache, bool in_terms_of_qdot) const {
   CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
-      6 * loops.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
+      6 * loops.size() + 1 * constraint_cables.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
 
   for (size_t i = 0; i < loops.size(); ++i) {
     // position constraint
@@ -2972,7 +2972,7 @@ Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree<T>::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
   CheckCacheValidity(cache);
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size() + 1 * constraint_cables.size(), 1);
 
   for (size_t i = 0; i < loops.size(); ++i) {
     // position constraint

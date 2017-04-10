@@ -70,15 +70,14 @@ CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
     const std::vector<T>& pulley_radii,
     const std::vector<int>& pulley_num_wraps)
     // const std::set<int>& model_instance_id_set)
-    : RigidBodyDynamicConstraint<T>(RigidBodyDynamicConstraint<T>::PositionConstraintCategory,
-                          robot),
+    :   robot_(robot),
         cable_length_(cable_length),
         pulley_frames_(pulley_frames),
         pulley_xyz_offsets_(pulley_xyz_offsets),
         pulley_axes_(pulley_axes),
         pulley_radii_(pulley_radii),
         pulley_num_wraps_(pulley_num_wraps) {
-  RigidBodyDynamicConstraint<T>::set_type(RigidBodyDynamicConstraint<T>::CableDynamicConstraintType);
+  // pass
 }
 
 template <typename T>
@@ -282,11 +281,6 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
   }
 
   return ret;
-
-
-  // Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(1, 1); // 1-by-1, one constraint
-  // ret.setZero();
-  // return ret;
 }
 
 template <typename T>
@@ -296,7 +290,7 @@ size_t CableDynamicConstraint<T>::getNumPositionConstraints() const {
 
 template <typename T>
 void CableDynamicConstraint<T>::updateRobot(RigidBodyTree<T>* robot) {
-  RigidBodyDynamicConstraint<T>::set_robot(robot);
+  robot_ = robot;
 }
 
 template <typename T>

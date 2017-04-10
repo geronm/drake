@@ -107,7 +107,7 @@ class RigidBodyDynamicConstraint {
  */
 
 template <typename T>
-class CableDynamicConstraint : public RigidBodyDynamicConstraint<T> {
+class CableDynamicConstraint {
  public:
   CableDynamicConstraint(RigidBodyTree<T>* robot,
     T cable_length,
@@ -153,12 +153,11 @@ class CableDynamicConstraint : public RigidBodyDynamicConstraint<T> {
   void updatePulleyRadii(std::vector<T>& pulley_radii);
 
  private:
-  // static const std::set<int> defaultRobotNumSet;
+  RigidBodyTree<T>* robot_{};
   T cable_length_;
   std::vector<int> pulley_frames_;
   std::vector<Eigen::Vector3d> pulley_xyz_offsets_;
   std::vector<Eigen::Vector3d> pulley_axes_;
   std::vector<T> pulley_radii_;
   std::vector<int> pulley_num_wraps_;
-  // std::vector<Eigen::Matrix3Xd> body_pts_;
 };

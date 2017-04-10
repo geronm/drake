@@ -1504,6 +1504,10 @@ class RigidBodyTree {
   std::vector<RigidBodyLoop<T>,
               Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
 
+  // Cable constraints
+  std::vector<int,
+              Eigen::aligned_allocator<int>> constraint_cables;
+
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
