@@ -20,6 +20,7 @@ during stiction).
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -83,24 +84,124 @@ std::unique_ptr<RigidBodyTreed> BuildTestTree() {
 int main() {
   systems::DiagramBuilder<double> builder;
 
-  // std::unique_ptr<RigidBodyTreed> rbt = BuildTestTree();
-
-//  std::set<int> id_set;
-//  CableDynamicConstraint cableConstraint((plant->get_rigid_body_tree()).get(), id_set);
-//  std::cout << "Output: " << cableConstraint.getNumPositionConstraints() << std::endl;
-
-  // auto tree = std::make_unique<RigidBodyTree<double>>();
-
 //  systems::RigidBodyPlant<double>* plant =
 //      builder.AddSystem<systems::RigidBodyPlant<double>>(BuildTestTree());
 
+  // Make the RBT
   auto tree = BuildTestTree();
   
-  std::set<int> id_set;
-  CableDynamicConstraint<double> cableConstraint(tree.get(), id_set);
-  std::cout << "Output: " << cableConstraint.getNumPositionConstraints() << std::endl;
+  // Find frame id for some named links
+  std::cout << "finger1_paddle -> " << (tree.get())->FindBodyIndex("finger1_paddle") << std::endl;
+  std::cout << "finger2_paddle -> " << (tree.get())->FindBodyIndex("finger2_paddle") << std::endl;
+  std::cout << "q_size -> " << (tree.get())->get_num_positions() << std::endl;
+
+  // Get body indices for the two tensioners
+  // int f1_index = (tree.get())->FindBodyIndex("finger1_paddle");
+  // int f2_index = (tree.get())->FindBodyIndex("finger2_paddle");
+
+  // Get a KinematicsCache ready
+//  KinematicsCache<double> cache = (tree.get())->CreateKinematicsCache();
+//  (tree.get())->doKinematics(cache, false);
+  Eigen::VectorXd q((tree.get())->get_num_positions());
+  q.setZero();
+  q(0) = 1.0;
+  q(1) = 1.0;
+  q(2) = 1.0;
+  q(3) = 1.0;
+  q(4) = 1.0;
+  q(5) = 1.0;
+  q(6) = 1.0;
+  q(7) = 1.0;
+  q(8) = 1.0;
+  q(9) = 1.0;
+  q(10) = 1.0;
+
+  std::cout << "q: " << std::endl << q << std::endl;
+
+  // Test some dynamic constraints stuff out on the tree.
+  // for (int i=0; i<=11; i++) {
+  //   std::cout << std::endl << i << std::endl;
+  //   std::cout << (tree.get())->transformPoints(cache, Eigen::Vector3d::Zero(),
+  //                                       i,
+  //                                       0) << std::endl;
+  // }
+
+  {
+
+    KinematicsCache<double> cache = (tree.get())->doKinematics(q);
+
+    // This is a cable stretching from one tensioner to the other, then in an L-shape to the left thingy
+    double cable_length = 0;
+    std::vector<int> pulley_frames;
+    std::vector<Eigen::Vector3d> pulley_xyz_offsets;
+    std::vector<Eigen::Vector3d> pulley_axes;
+    std::vector<double> pulley_radii;
+    std::vector<int> pulley_num_wraps;
+
+    pulley_frames.push_back((tree.get())->FindBodyIndex("finger1_paddle"));
+    pulley_frames.push_back((tree.get())->FindBodyIndex("finger2_paddle"));
+    pulley_frames.push_back((tree.get())->FindBodyIndex("finger2_paddle"));
+
+    pulley_axes.push_back(Eigen::Vector3d::Zero());
+    pulley_axes.push_back(Eigen::Vector3d::Zero());
+    pulley_axes.push_back(Eigen::Vector3d::Zero());
+
+    Eigen::Vector3d xyz_off_1;
+    xyz_off_1.setZero();
+    xyz_off_1(0) = -2.0;
+    xyz_off_1(1) = 0.0;
+    xyz_off_1(2) = 0.0;
+    pulley_xyz_offsets.push_back(Eigen::Vector3d::Zero()); // finger1 paddle
+    pulley_xyz_offsets.push_back(Eigen::Vector3d::Zero());  // finger2 paddle
+    pulley_xyz_offsets.push_back(xyz_off_1);  // finger2 paddle + [2,0,0]'
+
+  //  Teehee: 
+  //  5.94333
+  //  11.1912
+  //     0.05
+  //  Teehee: 
+  //  5.94333
+  //  7.19118
+  //     0.05
+  //  Teehee: 
+  //  7.19177
+  //  4.46329
+  //     0.05
 
 
+    pulley_radii.push_back(0.0);
+    pulley_radii.push_back(0.0);
+    pulley_radii.push_back(0.0);
+
+    pulley_num_wraps.push_back(0);
+    pulley_num_wraps.push_back(0);
+    pulley_num_wraps.push_back(0);
+
+    CableDynamicConstraint<double> cableConstraint(tree.get(), cable_length, pulley_frames, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps);
+
+    std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
+    std::cout << "  cableConstraint.getNumPositionConstraints() -> " << cableConstraint.getNumPositionConstraints() << std::endl;
+    std::cout << "  cableConstraint.positionConstraints() -> " << cableConstraint.positionConstraints(cache) << std::endl;
+    std::cout << "  cableConstraint.positionConstraintsJacobian() -> " << cableConstraint.positionConstraintsJacobian(cache, false) << std::endl;
+
+    // Empirically verify gradients
+    auto phi_q = cableConstraint.positionConstraints(cache);
+    
+    std::cout << "Empirical gradients: " << std::endl;
+    double h=.01;
+    for (int i=0; i<11; i++) {
+      q(i) += h;
+      cache = (tree.get())->doKinematics(q);
+      auto phi_q_di = cableConstraint.positionConstraints(cache);
+
+      std::cout << (phi_q_di - phi_q) / h << std::endl;
+
+      q(i) -= h;
+    }
+    
+  }
+
+  // Alright, let's get to simulating
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>( std::move(tree) );
 
@@ -163,13 +264,17 @@ int main() {
 
   // Print a time stamp update every tenth of a second.  This helps communicate
   // progress in the event that the integrator crawls to a very small timestep.
-  const double kPrintPeriod = 0.1;
+  const double kPrintPeriod = 1.0;
   int step_count =
       static_cast<int>(std::ceil(FLAGS_sim_duration / kPrintPeriod));
   for (int i = 1; i <= step_count; ++i) {
     double t = context->get_time();
     std::cout << "time: " << t << "\n";
     simulator.StepTo(i * kPrintPeriod);
+    
+    // std::cout << "state: " << std::endl << std::endl;
+    // std::cout << (simulator.get_context()).get_continuous_state()->CopyToVector();
+    // std::cout << std::endl << std::endl;
   }
 
   while (FLAGS_playback) viz_publisher->ReplayCachedSimulation();

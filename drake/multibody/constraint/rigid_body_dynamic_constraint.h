@@ -18,8 +18,6 @@ namespace DrakeRigidBodyDynamicConstraint {
 extern Eigen::Vector2d default_tspan;
 }
 
-/** TODO: TEMPLATED?????? */
-
 /**
  * @class RigidBodyDynamicConstraint       The abstract base class. All constraints
  * used in the inverse kinematics problem are inherited from
@@ -47,43 +45,61 @@ class RigidBodyDynamicConstraint {
 
   /* the critical methods: these will allow RBT to hook into these constraints at sim time.
    *  */
-  virtual Eigen::Matrix<T, Eigen::Dynamic, 1> positionConstraints(
-      const KinematicsCache<T>& cache) const {
-    Eigen::Matrix<T, Eigen::Dynamic, 1> ret(0, 1); // default is 0-by-1, no constraints
-    return ret;
-  }
-  virtual Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>
-  positionConstraintsJacobian(const KinematicsCache<T>& cache,
-                              bool in_terms_of_qdot = true) const {
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> ret(
-      0, in_terms_of_qdot ? robot_->get_num_velocities() : robot_->get_num_positions());
-           // default is 0-by-dim(q[dot]), no constraints
-    return ret;
-  }
-  virtual Eigen::Matrix<T, Eigen::Dynamic, 1> positionConstraintsJacDotTimesV(
-      const KinematicsCache<T>& cache) const {
-    Eigen::Matrix<T, Eigen::Dynamic, 1> ret(0, 1); // default is 0-by-1, no constraints
-    return ret;
-  }
-  virtual size_t getNumPositionConstraints() const { return 0; }
+//  template <typename Scalar>
+//  virtual Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
+//  positionConstraints(
+//      const KinematicsCache<Scalar>& cache) const {
+//    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(0, 1); // default is 0-by-1, no constraints
+//    return ret;
+//  }
+//  template <typename Scalar>
+//  virtual Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+//  positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
+//                              bool in_terms_of_qdot = true) const {
+//    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
+//      0, in_terms_of_qdot ? robot_->get_num_velocities() : robot_->get_num_positions());
+//           // default is 0-by-dim(q[dot]), no constraints
+//    return ret;
+//  }
+//  template <typename Scalar>
+//  virtual Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
+//  positionConstraintsJacDotTimesV(
+//      const KinematicsCache<Scalar>& cache) const {
+//    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(0, 1); // default is 0-by-1, no constraints
+//    return ret;
+//  }
+//  virtual size_t
+//  getNumPositionConstraints() const { return 0; }
 
  protected:
   void set_type(int type) { type_ = type; }
   void set_robot(RigidBodyTree<T>* robot) { robot_ = robot; }
 
- private:
   int category_{};
   int type_{};
   RigidBodyTree<T>* robot_{};
+
+ //private:
 };
 
 /**
  * @class CableDynamicConstraint       -- Constrain the specific frame locations
  * on the robot to maintain a fixed distance from one another.
  * @param robot
- * @param pulleys         -- The pulleys involved with the cable constraint.
+ * @param pulleys_frame         -- The pulleys' frame ids
+ * @param pulley_xyz           -- The pulleys' xyz offsets, in frame coords
+ * @param pulley_axes          -- The pulleys' axes
+ * @param pulley_radii
+ * @param pulley_num_wraps
  * Terminators are first and last pulley locations. (TODO: Maybe make this shallow;
  * lists of bodies, axes, xyz, rpy rather than packaging in pulleys)
+ *
+ * MATLAB each pulley consisted of:
+ *     p.frame = frame;   ~(int)
+ *     p.xyz = xyz;       ~(Vector3d)
+ *     p.axis = axis;     ~(Vector3d)
+ *     p.radius = radius; ~(double, maybe T)
+ *     p.number_of_wraps = number_of_wraps; ~(int)
  *
  * Function:
  *  @function positionConstraints     --evaluate the constraint
@@ -93,9 +109,14 @@ class RigidBodyDynamicConstraint {
 template <typename T>
 class CableDynamicConstraint : public RigidBodyDynamicConstraint<T> {
  public:
-  CableDynamicConstraint(
-      RigidBodyTree<T>* robot,
-      const std::set<int>& model_instance_id_set);
+  CableDynamicConstraint(RigidBodyTree<T>* robot,
+    T cable_length,
+    const std::vector<int>& pulley_frames,
+    const std::vector<Eigen::Vector3d>& pulley_xyz_offsets,
+    const std::vector<Eigen::Vector3d>& pulley_axes,
+    const std::vector<T>& pulley_radii,
+    const std::vector<int>& pulley_num_wraps);
+
 //      const std::set<int>& model_instance_id_set =
 //          CableDynamicConstraint::defaultRobotNumSet);
   virtual ~CableDynamicConstraint(void);
@@ -114,19 +135,30 @@ class CableDynamicConstraint : public RigidBodyDynamicConstraint<T> {
   //  void addContact(std::vector<int> body, const Eigen::Matrix3Xd& body_pts) {
   //    addContact(body.size(), body.data(), &body_pts);
   //}
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(
+      const KinematicsCache<Scalar>& cache) const;
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+  positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
+                              bool in_terms_of_qdot = true) const;
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
+  positionConstraintsJacDotTimesV(
+      const KinematicsCache<Scalar>& cache) const;
 
-  size_t getNumPositionConstraints() const override;
-
-  // void setShrinkFactor(double factor);
-  // void setActive(bool flag) { active_ = flag; }
+  size_t getNumPositionConstraints() const;
+  
   void updateRobot(RigidBodyTree<T>* robot);
-  // void updateRobotnum(std::set<int>& model_instance_id_set);
-  void updatePulleys(std::vector<int>& pulleys);
+  void updatePulleyRadii(std::vector<T>& pulley_radii);
 
  private:
   // static const std::set<int> defaultRobotNumSet;
-  std::vector<int> pulleys_;
-  // std::vector<int> bodies_;
-  // std::vector<int> num_body_pts_;
+  T cable_length_;
+  std::vector<int> pulley_frames_;
+  std::vector<Eigen::Vector3d> pulley_xyz_offsets_;
+  std::vector<Eigen::Vector3d> pulley_axes_;
+  std::vector<T> pulley_radii_;
+  std::vector<int> pulley_num_wraps_;
   // std::vector<Eigen::Matrix3Xd> body_pts_;
 };
