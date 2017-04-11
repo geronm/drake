@@ -2993,6 +2993,7 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
   for (size_t i = 0; i < constraint_cables.size(); ++i) {
     ret.row(6 * loops.size() + i) = constraint_cables[i].positionConstraintsJacDotTimesV(cache);
   }
+  
   return ret;
 }
 
@@ -3041,7 +3042,7 @@ size_t RigidBodyTree<T>::getNumJointLimitConstraints() const {
 
 template <typename T>
 size_t RigidBodyTree<T>::getNumPositionConstraints() const {
-  return loops.size() * 6;
+  return loops.size() * 6 + constraint_cables.size();
 }
 
 template <typename T>
