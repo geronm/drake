@@ -104,10 +104,10 @@ int main() {
 //  (tree.get())->doKinematics(cache, false);
   Eigen::VectorXd q((tree.get())->get_num_positions());
   q.setZero();
-  q(0) = 0.0;
-  q(1) = 0.0;
-  q(2) = 0.0;
-  q(3) = 0.0;
+  q(0) = 1.0;
+  q(1) = 1.0;
+  q(2) = 1.0;
+  q(3) = 1.0;
   q(4) = 0.0;
   q(5) = 0.0;
   q(6) = 0.0;
@@ -239,6 +239,13 @@ int main() {
     std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache,false) -> " << (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache, false) << std::endl;
     std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache,true)  -> " << (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache, true) << std::endl;
     std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacDotTimesV(cache)   -> " << (tree.get())->constraint_cables[0].positionConstraintsJacDotTimesV(cache) << std::endl;
+
+    std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
+    std::cout << "  (tree.get())->getNumPositionConstraints() -> " << (tree.get())->getNumPositionConstraints() << std::endl;
+    std::cout << "  (tree.get())->positionConstraints(cache) -> " << (tree.get())->positionConstraints(cache) << std::endl;
+    std::cout << "  (tree.get())->positionConstraintsJacobian(cache,false) -> " << (tree.get())->positionConstraintsJacobian(cache, false) << std::endl;
+    std::cout << "  (tree.get())->positionConstraintsJacobian(cache,true)  -> " << (tree.get())->positionConstraintsJacobian(cache, true) << std::endl;
+    std::cout << "  (tree.get())->positionConstraintsJacDotTimesV(cache)   -> " << (tree.get())->positionConstraintsJacDotTimesV(cache) << std::endl;
 
 
   }
