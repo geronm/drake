@@ -66,6 +66,11 @@ struct RigidBodyTreeConstants {
   static const std::set<int> default_model_instance_id_set;
 };
 
+
+// Forward-declare class to resolve circular dependency
+template <typename T>
+class CableDynamicConstraint;
+
 /**
  * Maintains a vector of RigidBody objects that are arranged into a kinematic
  * tree via DrakeJoint objects. It provides various utility methods for
@@ -1505,8 +1510,8 @@ class RigidBodyTree {
               Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
 
   // Cable constraints
-  std::vector<int,
-              Eigen::aligned_allocator<int>> constraint_cables;
+  std::vector<CableDynamicConstraint<T>,
+              Eigen::aligned_allocator<CableDynamicConstraint<T>>> constraint_cables;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
@@ -1633,3 +1638,60 @@ class RigidBodyTree {
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;
+
+
+template <typename T>
+class CableDynamicConstraint {
+ public:
+  CableDynamicConstraint(RigidBodyTree<T>* robot,
+    T cable_length,
+    const std::vector<std::string>& pulley_link_names,
+    const std::vector<Eigen::Vector3d>& pulley_xyz_offsets,
+    const std::vector<Eigen::Vector3d>& pulley_axes,
+    const std::vector<T>& pulley_radii,
+    const std::vector<int>& pulley_num_wraps);
+
+//      const std::set<int>& model_instance_id_set =
+//          CableDynamicConstraint::defaultRobotNumSet);
+  virtual ~CableDynamicConstraint(void);
+  //  bool isTimeValid(const double* t) const;
+  //  int getNumConstraint(const double* t) const;
+  //  void eval(const double* t, KinematicsCache<double>& cache,
+  //            const double* weights, Eigen::VectorXd& c,
+  //            Eigen::MatrixXd& dc) const;
+  //  void bounds(const double* t, Eigen::VectorXd& lb, Eigen::VectorXd& ub) const;
+  //  void name(const double* t, std::vector<std::string>& name_str) const;
+  //  bool isActive() const { return active_; }
+  //  int getNumWeights() const { return num_pts_; }
+  //  void addContact(int num_new_bodies, const int* body,
+  //                  const Eigen::Matrix3Xd* body_pts);
+  //
+  //  void addContact(std::vector<int> body, const Eigen::Matrix3Xd& body_pts) {
+  //    addContact(body.size(), body.data(), &body_pts);
+  //}
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(
+      const KinematicsCache<Scalar>& cache) const;
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+  positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
+                              bool in_terms_of_qdot = true) const;
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
+  positionConstraintsJacDotTimesV(
+      const KinematicsCache<Scalar>& cache) const;
+
+  size_t getNumPositionConstraints() const;
+  
+  void updateRobot(RigidBodyTree<T>* robot);
+  void updatePulleyRadii(std::vector<T>& pulley_radii);
+
+ private:
+  RigidBodyTree<T>* robot_{};
+  T cable_length_;
+  std::vector<std::string> pulley_link_names_;
+  std::vector<Eigen::Vector3d> pulley_xyz_offsets_;
+  std::vector<Eigen::Vector3d> pulley_axes_;
+  std::vector<T> pulley_radii_;
+  std::vector<int> pulley_num_wraps_;
+};
