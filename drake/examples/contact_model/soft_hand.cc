@@ -104,17 +104,17 @@ int main() {
 //  (tree.get())->doKinematics(cache, false);
   Eigen::VectorXd q((tree.get())->get_num_positions());
   q.setZero();
-  q(0) = 1.0;
-  q(1) = 1.0;
-  q(2) = 1.0;
-  q(3) = 1.0;
-  q(4) = 1.0;
-  q(5) = 1.0;
-  q(6) = 1.0;
-  q(7) = 1.0;
-  q(8) = 1.0;
-  q(9) = 1.0;
-  q(10) = 1.0;
+  q(0) = 0.0;
+  q(1) = 0.0;
+  q(2) = 0.0;
+  q(3) = 0.0;
+  q(4) = 0.0;
+  q(5) = 0.0;
+  q(6) = 0.0;
+  q(7) = 0.0;
+  q(8) = 0.0;
+  q(9) = 0.0;
+  q(10) = 0.0;
 
   std::cout << "q.transpose(): " << std::endl << q.transpose() << std::endl;
 
@@ -139,12 +139,17 @@ int main() {
     KinematicsCache<double> cache = (tree.get())->doKinematics(q, v, true);
 
     // This is a cable stretching from one tensioner to the other, then in an L-shape to the left thingy
-    double cable_length = 0;
+    double cable_length = 6.0;
     std::vector<int> pulley_frames;
+    std::vector<std::string> pulley_link_names;
     std::vector<Eigen::Vector3d> pulley_xyz_offsets;
     std::vector<Eigen::Vector3d> pulley_axes;
     std::vector<double> pulley_radii;
     std::vector<int> pulley_num_wraps;
+
+    pulley_link_names.push_back("finger1_paddle");
+    pulley_link_names.push_back("finger2_paddle");
+    pulley_link_names.push_back("finger2_paddle");
 
     pulley_frames.push_back((tree.get())->FindBodyIndex("finger1_paddle"));
     pulley_frames.push_back((tree.get())->FindBodyIndex("finger2_paddle"));
@@ -185,7 +190,7 @@ int main() {
     pulley_num_wraps.push_back(0);
     pulley_num_wraps.push_back(0);
 
-    CableDynamicConstraint<double> cableConstraint(tree.get(), cable_length, pulley_frames, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps);
+    CableDynamicConstraint<double> cableConstraint(tree.get(), cable_length, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps);
 
     std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
     std::cout << "  cableConstraint.getNumPositionConstraints() -> " << cableConstraint.getNumPositionConstraints() << std::endl;
@@ -221,7 +226,20 @@ int main() {
     cache = (tree.get())->doKinematics(q);
     auto phi_q_2h = cableConstraint.positionConstraints(cache);
 
-    std::cout << "Empirial phi-double-dot: " << ((phi_q_2h - 2*phi_q_h + phi_q_0)/h/h) << std::endl;    
+    std::cout << "Empirical phi-double-dot: " << ((phi_q_2h - 2*phi_q_h + phi_q_0)/h/h) << std::endl;    
+
+    q -= 2*v*h;
+
+    cache = (tree.get())->doKinematics(q, v, true);
+    std::cout << "q.transpose(): " << std::endl << q.transpose() << std::endl;
+    std::cout << "v.transpose(): " << std::endl << v.transpose() << std::endl;
+    std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
+    std::cout << "  (tree.get())->constraint_cables[0].getNumPositionConstraints() -> " << (tree.get())->constraint_cables[0].getNumPositionConstraints() << std::endl;
+    std::cout << "  (tree.get())->constraint_cables[0].positionConstraints(cache) -> " << (tree.get())->constraint_cables[0].positionConstraints(cache) << std::endl;
+    std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache,false) -> " << (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache, false) << std::endl;
+    std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache,true)  -> " << (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache, true) << std::endl;
+    std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacDotTimesV(cache)   -> " << (tree.get())->constraint_cables[0].positionConstraintsJacDotTimesV(cache) << std::endl;
+
 
   }
 

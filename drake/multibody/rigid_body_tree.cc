@@ -2941,6 +2941,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
       ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
+  for (size_t i = 0; i < constraint_cables.size(); ++i) {
+    ret.row(6 * loops.size() + i) = constraint_cables[i].positionConstraints(cache);
+  }
   return ret;
 }
 
@@ -2963,6 +2966,9 @@ RigidBodyTree<T>::positionConstraintsJacobian(
         cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
   }
+  for (size_t i = 0; i < constraint_cables.size(); ++i) {
+    ret.row(6 * loops.size() + i) = constraint_cables[i].positionConstraintsJacobian(cache, in_terms_of_qdot);
+  }
   return ret;
 }
 
@@ -2983,6 +2989,9 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
     ret.template middleRows<3>(6 * i + 3) = transformPointsJacobianDotTimesV(
         cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index());
+  }
+  for (size_t i = 0; i < constraint_cables.size(); ++i) {
+    ret.row(6 * loops.size() + i) = constraint_cables[i].positionConstraintsJacDotTimesV(cache);
   }
   return ret;
 }
@@ -3237,6 +3246,246 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
   Jdv_WF.template tail<3>() += w_WF.template head<3>().cross(pdot_WF) +
                                Jdv_WBwo.template head<3>().cross(p_WF);
   return Jdv_WF;
+}
+
+
+
+
+template <typename T>
+CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
+    T cable_length,
+    const std::vector<std::string>& pulley_link_names,
+    const std::vector<Eigen::Vector3d>& pulley_xyz_offsets,
+    const std::vector<Eigen::Vector3d>& pulley_axes,
+    const std::vector<T>& pulley_radii,
+    const std::vector<int>& pulley_num_wraps)
+    // const std::set<int>& model_instance_id_set)
+    :   robot_(robot),
+        cable_length_(cable_length),
+        pulley_link_names_(pulley_link_names),
+        pulley_xyz_offsets_(pulley_xyz_offsets),
+        pulley_axes_(pulley_axes),
+        pulley_radii_(pulley_radii),
+        pulley_num_wraps_(pulley_num_wraps) {
+  // pass
+}
+
+template <typename T>
+CableDynamicConstraint<T>::~CableDynamicConstraint() {}
+
+template <typename T>
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionConstraints(
+      const KinematicsCache<Scalar>& cache) const {
+  this->robot_->CheckCacheValidity(cache);
+  
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(1, 1); // default is 1-by-1, one constraint
+
+  Scalar phi = 0.0;
+
+  // Need at least 2 anchor points in order for there to be any length to phi
+  if (pulley_link_names_.size() >= 2) {
+    auto last_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[0],
+                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+                                      0);
+    // TODO deleteme VVVV
+    // std::cout << "Teehee: " << std::endl << last_p << std::endl;
+    // Every pulley adds some length to phi
+    for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
+      {  // position constraint
+        auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
+                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                        0);
+        phi += (cur_p - last_p).norm();
+
+        last_p = cur_p;
+
+        // TODO deleteme VVVV
+        // std::cout << "Teehee: " << std::endl << last_p << std::endl;
+      }
+    }
+  }
+
+  phi -= cable_length_;
+
+  ret(0, 0) = phi;
+  return ret;
+}
+
+template <typename T>
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<T>::positionConstraintsJacobian(
+                            const KinematicsCache<Scalar>& cache,
+                            bool in_terms_of_qdot) const {
+  this->robot_->CheckCacheValidity(cache);
+
+  // Checked with Twan; in_terms_of_qdot will change the structures of the vectors returned
+  // by RigidBodyTree::transformPoints and RigidBodyTree::transformPointsJacobian, but
+  // this code should still just sort of work?
+  
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
+    1, in_terms_of_qdot ? this->robot_->get_num_velocities() : this->robot_->get_num_positions());
+         // 1-by-dim(q[dot]), one constraint
+  ret.setZero();
+
+  // Eigen::Vector<Scalar> dphi(in_terms_of_qdot ? robot_->get_num_velocities() : robot_->get_num_positions());
+  // dphi.setZero();
+
+  // Need at least 2 anchor points in order for there to be any length to phi
+  if (pulley_link_names_.size() >= 2) {
+    auto last_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[0],
+                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+                                      0);
+    auto d_last_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[0],
+                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+                                      0,
+                                      in_terms_of_qdot);
+
+    // TODO deleteme VVVV
+    // std::cout << "Teehee 1: " << std::endl << last_p << std::endl;
+
+    // Every pulley adds some length to phi
+    for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
+      {  // position constraint
+        auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
+                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                        0);
+        auto d_cur_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[i],
+                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                        0,
+                                        in_terms_of_qdot);
+
+        // MATLAB Reference:
+        //
+        // vec = pt-last_pt;
+        // C = sqrt(vec'*vec);
+        //
+        // if nargout>1
+        //   dvec = dpt-last_dpt;
+        //   dC = vec'*dvec/C;
+
+        auto vec = (cur_p - last_p);
+        auto C = vec.norm(); // C represents distance from previous pulley to current pulley
+
+        // (TODO(#XXXX) handle C=0 silently, shouldn't just be doomed to divide-by-zero)
+        auto dvec = d_cur_p - d_last_p;
+        auto dC = (vec.transpose() * dvec) / (C + EPSILON);
+
+        // MATLAB Reference:
+        //
+        // length = length+C;
+        // last_attachment_pt = pt;
+        // if nargout>1
+        //   dlength = dlength+dC;
+        //   last_attachment_dpt = dpt;
+        // end
+
+        ret.row(0) += dC;
+
+        last_p = cur_p;
+        d_last_p = d_cur_p;
+
+        // TODO deleteme VVVV
+        // std::cout << "Teehee 2: " << std::endl << last_p << std::endl;
+      }
+    }
+  }
+
+  return ret;
+}
+
+template <typename T>
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionConstraintsJacDotTimesV(
+    const KinematicsCache<Scalar>& cache) const {
+
+  // This one is complicated. Put the following into LaTeX for a glimpse of the formula:
+  //
+  //
+  /*
+   \begin{align*}
+     \dot{J}_v v = & \\
+       &\frac{(p_{i+1}-p_i)^{\top}}{|p_{i+1}-p_i|}(\dot{J}_{v,i+1}v-\dot{J}_{v,i}v)  \\ + &\\
+       &               \left(\left[\frac{1}{|p_{i+1}-p_i|}-\frac{(p_{i+1}-p_i)(p_{i+1}-p_i)^{\top}}{|p_{i+1}-p_i|^3}\right](J_{v,i+1}v-J_{v,i}v)\right)^{\top}
+                    (J_{v,i+1}-J_{v,i})v
+   \end{align*}
+  */
+  //
+
+  this->robot_->CheckCacheValidity(cache);
+
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(1,1);
+  ret.setZero();
+
+  auto q = cache.getQ();
+  auto v = cache.getV();
+
+  // Need at least 2 anchor points in order for there to be any length to phi
+  if (pulley_link_names_.size() >= 2) {
+    auto last_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[0],
+                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+                                      0);
+    auto d_last_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[0],
+                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+                                      0,
+                                      false);
+    auto jdv_last_p = this->robot_->transformPointsJacobianDotTimesV(cache, pulley_xyz_offsets_[0],
+                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+                                      0);
+
+    // TODO deleteme VVVV
+    // std::cout << "Teehee 1: " << std::endl << last_p << std::endl;
+
+    // Every pulley adds some length to phi
+    for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
+      {  // position constraint
+        auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
+                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                        0);
+        auto d_cur_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[i],
+                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                        0,
+                                        false);
+        auto jdv_cur_p = this->robot_->transformPointsJacobianDotTimesV(cache, pulley_xyz_offsets_[i],
+                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                        0);
+
+        auto vec = (cur_p - last_p);
+        auto C = vec.norm(); // C represents distance from previous pulley to current pulley
+
+        // (TODO(#XXXX) handle C=0 silently, shouldn't just be doomed to divide-by-zero)
+
+        // Term: 1/|p2-p1| * (p2-p1)^T * (J2'q' - J1'q')
+        ret += (vec.transpose() * (jdv_cur_p - jdv_last_p)) / (C + EPSILON);
+
+
+        // Term: ([1/|p2-p1| - (p2-p1)(p2-p1)^T/(|p2-p1|^3)] * (p2'-p1'))^T * (p2'-p1')
+        auto dvec_dt = (d_cur_p - d_last_p) * v;  // (p2'-p1')
+        ret +=  ( (  dvec_dt  -  vec*(vec.transpose())*dvec_dt/(C + EPSILON)/(C + EPSILON)  ) / (C + EPSILON) ).transpose() * dvec_dt;
+
+        last_p = cur_p;
+        d_last_p = d_cur_p;
+        jdv_last_p = jdv_cur_p;
+      }
+    }
+  }
+
+  return ret;
+}
+
+template <typename T>
+size_t CableDynamicConstraint<T>::getNumPositionConstraints() const {
+  return 1; // every pulley imposes 1 constraint on the system.
+}
+
+template <typename T>
+void CableDynamicConstraint<T>::updateRobot(RigidBodyTree<T>* robot) {
+  robot_ = robot;
+}
+
+template <typename T>
+void CableDynamicConstraint<T>::updatePulleyRadii(std::vector<T>& pulley_radii) {
+  pulley_radii_ = pulley_radii;
 }
 
 // Explicit template instantiations for massMatrix.
@@ -3745,3 +3994,14 @@ RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyTree<double>;
+
+// Explicitly instantiate the most common scalar types.
+template class CableDynamicConstraint<double>;
+
+template Eigen::Matrix<double, Eigen::Dynamic, 1> CableDynamicConstraint<double>::positionConstraints(
+      const KinematicsCache<double>& cache) const;
+template Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<double>::positionConstraintsJacobian(
+                            const KinematicsCache<double>& cache,
+                            bool in_terms_of_qdot) const;
+template Eigen::Matrix<double, Eigen::Dynamic, 1> CableDynamicConstraint<double>::positionConstraintsJacDotTimesV(
+  const KinematicsCache<double>& cache) const;

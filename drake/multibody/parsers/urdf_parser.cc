@@ -741,6 +741,105 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
+void ParsePulley( RigidBodyTree<double>* tree,
+                  std::vector<std::string>& pulley_link_names,
+                  std::vector<Eigen::Vector3d>& pulley_xyz_offsets,
+                  std::vector<Eigen::Vector3d>& pulley_axes,
+                  std::vector<double>& pulley_radii,
+                  std::vector<int>& pulley_num_wraps,
+                  XMLElement* pulley_node,
+                  int model_instance_id,
+                  bool is_terminator) {
+  // Parse the XMLElement either as a terminal tag or as a pulley tag,
+  // and append the resulting CableDynamicConstraint to pulleys.
+
+  string link_name = "";
+  Vector3d xyz(0, 0, 0);
+  Vector3d rpy(0, 0, 0);
+  Vector3d axis(0, 0, 0);
+  double radius = 0.0;
+  int number_of_wraps = 0;
+
+  // Obtains the relevant frame id.
+  {
+    const char* attr = pulley_node->Attribute("link");
+    if (!attr) {
+      throw std::runtime_error(
+          "RigidBodyTreeURDF.cpp: ParsePulley: ERROR: Cable subtag is "
+          "missing link attribute.");
+    }
+    link_name = string(attr);
+  }
+  
+  // Check for xyz, store those as well
+  {
+    const char* attr = pulley_node->Attribute("xyz");
+    if (attr) {
+      parseVectorAttribute(pulley_node, "xyz", xyz);
+    }
+  }
+
+  // Here is where the spec differs between terminator and pulley
+  if (is_terminator) { // Terminator case
+    // Terminator has rpy
+    {
+      const char* attr = pulley_node->Attribute("rpy");
+      if (attr) {
+        parseVectorAttribute(pulley_node, "rpy", rpy);
+      }
+    }
+  } else { // Pulley case
+    // Pulley has a radius
+    {
+      const char* attr = pulley_node->Attribute("radius");
+      if (attr) {
+        parseScalarAttribute(pulley_node, "radius", radius);
+      }
+    }
+
+    // Pulley has an axis
+    {
+      const char* attr = pulley_node->Attribute("axis");
+      if (attr) {
+        parseVectorAttribute(pulley_node, "axis", axis);
+      
+        if (axis.norm() < 1e-8) {
+          throw runtime_error("ERROR: axis is zero.  don't do that");
+        }
+        axis.normalize();
+      }
+    }
+
+    // Pulley has a number_of_wraps
+    {
+      const char* attr = pulley_node->Attribute("number_of_wraps");
+      if (attr) {
+        parseScalarAttribute(pulley_node, "number_of_wraps", number_of_wraps);
+      }
+    }
+  }
+
+  // DEBUG
+  std::cout << "Parsed pulley with the following attributes:" << std::endl;
+  std::cout << link_name << std::endl;
+  std::cout << xyz.transpose() << std::endl;
+  std::cout << rpy.transpose() << std::endl;
+  std::cout << axis.transpose() << std::endl;
+  std::cout << radius << std::endl;
+  std::cout << number_of_wraps << std::endl;
+
+
+  // Grow all the data structures together TODO(geronm) have this
+  // method return a struct with the data, and do this appending in
+  // the caller.
+  pulley_link_names.push_back(link_name);
+  pulley_xyz_offsets.push_back(xyz);
+  pulley_axes.push_back(axis);
+  pulley_radii.push_back(radius);
+  pulley_num_wraps.push_back(number_of_wraps);
+}
+
+
 void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
                 int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
@@ -750,9 +849,37 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
   // string name, type, parent_name, child_name;
   // ParseJointKeyParams(node, name, type, parent_name, child_name);
 
-  std::cout << "Parsed a cable!" << std::endl;
+  // Initialize some data structures
+  std::vector<std::string> pulley_link_names;
+  std::vector<Eigen::Vector3d> pulley_xyz_offsets;
+  std::vector<Eigen::Vector3d> pulley_axes;
+  std::vector<double> pulley_radii;
+  std::vector<int> pulley_num_wraps;
 
-  std::vector<string> pulleys;
+  // Parse Cable itself's parameters
+
+  double cable_length = EPSILON;
+
+  // Cable length
+  {
+    const char* attr = node->Attribute("max_length");
+    if (!attr) {
+      throw std::runtime_error(
+          "RigidBodyTreeURDF.cpp: ParsePulley: ERROR: Cable tag is "
+          "missing max_length attribute.");
+    }
+    parseScalarAttribute(node, "max_length", cable_length);
+  }
+
+
+  // Now, parse all terminators/pulleys
+  std::cout << "Parsing a cable!" << std::endl;
+  {
+    // Start with first terminator
+    XMLElement* terminator_node = node->FirstChildElement("terminator");
+    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps,
+                    terminator_node, model_instance_id, true);
+  }
 
   for (XMLElement* pulley_node = node->FirstChildElement("pulley");
        pulley_node; pulley_node = pulley_node->NextSiblingElement("pulley")) {
@@ -765,88 +892,30 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
       }
     }
 
-    // Obtains the joint's name.
-    const char* attr = pulley_node->Attribute("link");
-    if (!attr) {
-      throw std::runtime_error(
-          "RigidBodyTreeURDF.cpp: GetActuatorEffortLimit: ERROR: Joint tag is "
-          "missing name attribute.");
-    }
-    string link = string(attr);
-
-    pulleys.push_back(link);
+    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps,
+                    pulley_node, model_instance_id, false);
   }
 
 
-  std::cout << " Pulleys:" << std::endl;
-  for (std::vector<string>::iterator it = pulleys.begin(); it != pulleys.end(); ++it)
-    std::cout << "   " << *it << std::endl;
+  {
+    // End with second terminator
+    XMLElement* terminator_node = node->FirstChildElement("terminator");
+    terminator_node = terminator_node->NextSiblingElement("terminator");
+    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps,
+                    terminator_node, model_instance_id, true);
+  }
 
-  // Checks if this joint connects to the world and, if so, terminates this
-  // method call. This is because joints that connect to the world are processed
-  // separately.
-//  if (parent_name == string(RigidBodyTreeConstants::kWorldName)) return;
-//
-//  int parent_index = tree->FindBodyIndex(parent_name, model_instance_id);
-//  if (parent_index < 0) {
-//    throw runtime_error(
-//        "parser_urdf.cc: ParseJoint: ERROR: Could not find "
-//        "parent link named \"" +
-//        parent_name + "\" with model instance ID " +
-//        std::to_string(model_instance_id) + ".");
-//  }
-//
-//  int child_index = tree->FindBodyIndex(child_name, model_instance_id);
-//  if (child_index < 0) {
-//    throw runtime_error(
-//        "parser_urdf.cc: ParseJoint: ERROR: Could not find "
-//        "child link named \"" +
-//        child_name + "\" with model instance ID " +
-//        std::to_string(model_instance_id) + ".");
-//  }
-//
-//  Isometry3d transform_to_parent_body = Isometry3d::Identity();
-//  XMLElement* origin = node->FirstChildElement("origin");
-//  if (origin) {
-//    originAttributesToTransform(origin, transform_to_parent_body);
-//  }
-//
-//  Vector3d axis(1, 0, 0);
-//  XMLElement* axis_node = node->FirstChildElement("axis");
-//  if (axis_node && type.compare("fixed") != 0 &&
-//      type.compare("floating") != 0) {
-//    parseVectorAttribute(axis_node, "xyz", axis);
-//    if (axis.norm() < 1e-8)
-//      throw runtime_error("ERROR: axis is zero.  don't do that");
-//    axis.normalize();
-//  }
-//
-//  // now construct the actual joint (based on its type)
-//  DrakeJoint* joint = nullptr;
-//
-//  if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-//    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-//        new RevoluteJoint(name, transform_to_parent_body, axis);
-//    SetDynamics(node, fjoint);
-//    SetLimits(node, fjoint);
-//    joint = fjoint;
-//  } else if (type.compare("fixed") == 0) {
-//    joint = new FixedJoint(name, transform_to_parent_body);
-//  } else if (type.compare("prismatic") == 0) {
-//    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-//        new PrismaticJoint(name, transform_to_parent_body, axis);
-//    SetDynamics(node, fjoint);
-//    SetLimits(node, fjoint);
-//    joint = fjoint;
-//  } else if (type.compare("floating") == 0) {
-//    joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
-//  } else {
-//    throw runtime_error("ERROR: Unrecognized joint type: " + type);
-//  }
-//
-//  unique_ptr<DrakeJoint> joint_unique_ptr(joint);
-//  tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
-//  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
+  CableDynamicConstraint<double> cable_constraint(tree,
+                                                  cable_length,
+                                                  pulley_link_names,
+                                                  pulley_xyz_offsets,
+                                                  pulley_axes,
+                                                  pulley_radii,
+                                                  pulley_num_wraps);
+
+
+  tree->constraint_cables.push_back(cable_constraint);
+  // KinematicsCache<double> cache = (tree.get())->doKinematics(q, v, true);
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint
@@ -1266,7 +1335,11 @@ ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
   ModelInstanceIdTable model_instance_id_table = ParseModel(
       tree, node, package_map, root_dir, floating_base_type, weld_to_frame);
 
+  std::cout << "Badness1: " << tree->FindBodyIndex("finger1_paddle") << std::endl;
+
   tree->compile();
+
+  std::cout << "Badness2: " << tree->FindBodyIndex("finger1_paddle") << std::endl;
 
   return model_instance_id_table;
 }
