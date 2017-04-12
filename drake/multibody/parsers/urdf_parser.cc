@@ -819,16 +819,6 @@ void ParsePulley( RigidBodyTree<double>* tree,
     }
   }
 
-  // DEBUG
-  std::cout << "Parsed pulley with the following attributes:" << std::endl;
-  std::cout << link_name << std::endl;
-  std::cout << xyz.transpose() << std::endl;
-  std::cout << rpy.transpose() << std::endl;
-  std::cout << axis.transpose() << std::endl;
-  std::cout << radius << std::endl;
-  std::cout << number_of_wraps << std::endl;
-
-
   // Grow all the data structures together TODO(geronm) have this
   // method return a struct with the data, and do this appending in
   // the caller.
@@ -873,7 +863,6 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
 
 
   // Now, parse all terminators/pulleys
-  std::cout << "Parsing a cable!" << std::endl;
   {
     // Start with first terminator
     XMLElement* terminator_node = node->FirstChildElement("terminator");
@@ -1335,11 +1324,7 @@ ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
   ModelInstanceIdTable model_instance_id_table = ParseModel(
       tree, node, package_map, root_dir, floating_base_type, weld_to_frame);
 
-  std::cout << "Badness1: " << tree->FindBodyIndex("finger1_paddle") << std::endl;
-
   tree->compile();
-
-  std::cout << "Badness2: " << tree->FindBodyIndex("finger1_paddle") << std::endl;
 
   return model_instance_id_table;
 }

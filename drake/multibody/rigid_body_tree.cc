@@ -3280,7 +3280,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
       const KinematicsCache<Scalar>& cache) const {
   this->robot_->CheckCacheValidity(cache);
   
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(1, 1); // default is 1-by-1, one constraint
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(1, 1); // default is 1-by-1, one 1D constraint
 
   Scalar phi = 0.0;
 
@@ -3289,9 +3289,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
     auto last_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[0],
                                       this->robot_->FindBodyIndex(pulley_link_names_[0]),
                                       0);
-    // TODO deleteme VVVV
-    // std::cout << "Teehee: " << std::endl << last_p << std::endl;
-    // Every pulley adds some length to phi
+
     for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
       {  // position constraint
         auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
@@ -3300,9 +3298,6 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
         phi += (cur_p - last_p).norm();
 
         last_p = cur_p;
-
-        // TODO deleteme VVVV
-        // std::cout << "Teehee: " << std::endl << last_p << std::endl;
       }
     }
   }
@@ -3321,16 +3316,13 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<T>:
   this->robot_->CheckCacheValidity(cache);
 
   // Checked with Twan; in_terms_of_qdot will change the structures of the vectors returned
-  // by RigidBodyTree::transformPoints and RigidBodyTree::transformPointsJacobian, but
-  // this code should still just sort of work?
+  // by RigidBodyTree::transformPoints and RigidBodyTree::transformPointsJacobian, but makes
+  // it in terms of v rather than q or something else. Can offload this to transformPointsJacobian.
   
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
     1, in_terms_of_qdot ? this->robot_->get_num_velocities() : this->robot_->get_num_positions());
-         // 1-by-dim(q[dot]), one constraint
+         // 1-by-dim(q[dot]), one 1D constraint's Jacobian row vector
   ret.setZero();
-
-  // Eigen::Vector<Scalar> dphi(in_terms_of_qdot ? robot_->get_num_velocities() : robot_->get_num_positions());
-  // dphi.setZero();
 
   // Need at least 2 anchor points in order for there to be any length to phi
   if (pulley_link_names_.size() >= 2) {
@@ -3341,9 +3333,6 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<T>:
                                       this->robot_->FindBodyIndex(pulley_link_names_[0]),
                                       0,
                                       in_terms_of_qdot);
-
-    // TODO deleteme VVVV
-    // std::cout << "Teehee 1: " << std::endl << last_p << std::endl;
 
     // Every pulley adds some length to phi
     for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
@@ -3368,7 +3357,6 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<T>:
         auto vec = (cur_p - last_p);
         auto C = vec.norm(); // C represents distance from previous pulley to current pulley
 
-        // (TODO(#XXXX) handle C=0 silently, shouldn't just be doomed to divide-by-zero)
         auto dvec = d_cur_p - d_last_p;
         auto dC = (vec.transpose() * dvec) / (C + EPSILON);
 
@@ -3385,9 +3373,6 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<T>:
 
         last_p = cur_p;
         d_last_p = d_cur_p;
-
-        // TODO deleteme VVVV
-        // std::cout << "Teehee 2: " << std::endl << last_p << std::endl;
       }
     }
   }
@@ -3400,7 +3385,7 @@ template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
 
-  // This one is complicated. Put the following into LaTeX for a glimpse of the formula:
+  // Jdotv is complicated. Put the following into LaTeX for a glimpse of the formula:
   //
   //
   /*
@@ -3434,10 +3419,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
                                       this->robot_->FindBodyIndex(pulley_link_names_[0]),
                                       0);
 
-    // TODO deleteme VVVV
-    // std::cout << "Teehee 1: " << std::endl << last_p << std::endl;
-
-    // Every pulley adds some length to phi
+    // Every cable segment adds some length to phi
     for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
       {  // position constraint
         auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
@@ -3454,13 +3436,10 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
         auto vec = (cur_p - last_p);
         auto C = vec.norm(); // C represents distance from previous pulley to current pulley
 
-        // (TODO(#XXXX) handle C=0 silently, shouldn't just be doomed to divide-by-zero)
-
-        // Term: 1/|p2-p1| * (p2-p1)^T * (J2'q' - J1'q')
+        // Term1: 1/|p2-p1| * (p2-p1)^T * (J2'q' - J1'q')
         ret += (vec.transpose() * (jdv_cur_p - jdv_last_p)) / (C + EPSILON);
 
-
-        // Term: ([1/|p2-p1| - (p2-p1)(p2-p1)^T/(|p2-p1|^3)] * (p2'-p1'))^T * (p2'-p1')
+        // Term2: ([1/|p2-p1| - (p2-p1)(p2-p1)^T/(|p2-p1|^3)] * (p2'-p1'))^T * (p2'-p1')
         auto dvec_dt = (d_cur_p - d_last_p) * v;  // (p2'-p1')
         ret +=  ( (  dvec_dt  -  vec*(vec.transpose())*dvec_dt/(C + EPSILON)/(C + EPSILON)  ) / (C + EPSILON) ).transpose() * dvec_dt;
 

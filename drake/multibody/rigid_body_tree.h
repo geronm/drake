@@ -1651,24 +1651,8 @@ class CableDynamicConstraint {
     const std::vector<T>& pulley_radii,
     const std::vector<int>& pulley_num_wraps);
 
-//      const std::set<int>& model_instance_id_set =
-//          CableDynamicConstraint::defaultRobotNumSet);
   virtual ~CableDynamicConstraint(void);
-  //  bool isTimeValid(const double* t) const;
-  //  int getNumConstraint(const double* t) const;
-  //  void eval(const double* t, KinematicsCache<double>& cache,
-  //            const double* weights, Eigen::VectorXd& c,
-  //            Eigen::MatrixXd& dc) const;
-  //  void bounds(const double* t, Eigen::VectorXd& lb, Eigen::VectorXd& ub) const;
-  //  void name(const double* t, std::vector<std::string>& name_str) const;
-  //  bool isActive() const { return active_; }
-  //  int getNumWeights() const { return num_pts_; }
-  //  void addContact(int num_new_bodies, const int* body,
-  //                  const Eigen::Matrix3Xd* body_pts);
-  //
-  //  void addContact(std::vector<int> body, const Eigen::Matrix3Xd& body_pts) {
-  //    addContact(body.size(), body.data(), &body_pts);
-  //}
+
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(
       const KinematicsCache<Scalar>& cache) const;
