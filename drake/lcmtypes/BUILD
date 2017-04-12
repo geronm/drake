@@ -173,6 +173,12 @@ _VIEWER_LCM_SRCS = [
 ]
 
 lcm_cc_library(
+    name = "viewer2",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_viewer2_comms.lcm"],
+)
+
+lcm_cc_library(
     name = "viewer",
     lcm_package = "drake",
     lcm_srcs = _VIEWER_LCM_SRCS,

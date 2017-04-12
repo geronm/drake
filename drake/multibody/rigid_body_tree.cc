@@ -3274,6 +3274,25 @@ CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
 template <typename T>
 CableDynamicConstraint<T>::~CableDynamicConstraint() {}
 
+
+template <typename T>
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 3> CableDynamicConstraint<T>::getWrapPoints(
+      const KinematicsCache<Scalar>& cache) const {
+
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 3> ret(pulley_link_names_.size(), 3); // default is 1-by-1, one 1D constraint
+  
+  for (size_t i = 0; i < pulley_link_names_.size(); ++i) {
+    auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
+                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                        0);
+    ret.row(i) = cur_p.transpose();
+  }
+
+  return ret;
+}
+
+
 template <typename T>
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionConstraints(
@@ -3978,6 +3997,8 @@ template class RigidBodyTree<double>;
 // Explicitly instantiate the most common scalar types.
 template class CableDynamicConstraint<double>;
 
+template Eigen::Matrix<double, Eigen::Dynamic, 3> CableDynamicConstraint<double>::getWrapPoints(
+      const KinematicsCache<double>& cache) const;
 template Eigen::Matrix<double, Eigen::Dynamic, 1> CableDynamicConstraint<double>::positionConstraints(
       const KinematicsCache<double>& cache) const;
 template Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<double>::positionConstraintsJacobian(

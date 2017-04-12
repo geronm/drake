@@ -16,6 +16,7 @@ during stiction).
 */
 
 #include <memory>
+#include <time.h>
 
 #include <gflags/gflags.h>
 
@@ -23,6 +24,7 @@ during stiction).
 #include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
+#include "drake/lcmt_viewer2_comms.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
@@ -55,6 +57,15 @@ using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 
+static double getUnixTime(void)
+{
+    struct timespec tv;
+
+    if(clock_gettime(CLOCK_REALTIME, &tv) != 0) return 0;
+
+    return (tv.tv_sec + (tv.tv_nsec / 1000000000.0));
+}
+
 std::unique_ptr<RigidBodyTreed> BuildTestTree() {
   std::unique_ptr<RigidBodyTreed> tree = std::make_unique<RigidBodyTreed>();
 
@@ -81,6 +92,24 @@ std::unique_ptr<RigidBodyTreed> BuildTestTree() {
   return tree;
 }
 
+void publishLine(const std::string json_str, std::vector<std::string> path, drake::lcm::DrakeLcm& lcm) {
+  long long int now = getUnixTime() * 1000 * 1000;
+  auto msg = lcmt_viewer2_comms();
+  msg.utime = now;
+  msg.format = "treeviewer_json";
+  msg.format_version_major = 1;
+  msg.format_version_minor = 0;
+  msg.data.clear();
+  for (auto& c : json_str) {
+    msg.data.push_back(c);
+    // std::cout << c;
+  }
+  // std::cout << std::endl << std::endl << std::endl;
+  msg.num_bytes = json_str.size();
+  // Use channel 0 for remote viewer communications.
+  lcm.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
+}
+
 int main() {
   systems::DiagramBuilder<double> builder;
 
@@ -104,10 +133,10 @@ int main() {
 //  (tree.get())->doKinematics(cache, false);
   Eigen::VectorXd q((tree.get())->get_num_positions());
   q.setZero();
-  q(0) = 1.0;
-  q(1) = 1.0;
-  q(2) = 1.0;
-  q(3) = 1.0;
+  q(0) = 0.0;
+  q(1) = 0.0;
+  q(2) = 0.0;
+  q(3) = 0.0;
   q(4) = 0.0;
   q(5) = 0.0;
   q(6) = 0.0;
@@ -277,7 +306,7 @@ int main() {
 
   // (geronm) Create a 1-port input to the physical system
   VectorX<double> source_value(1);
-  source_value(0) = 10.0;
+  source_value(0) = 20.0;
   const auto force_input =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
           source_value);
@@ -325,6 +354,12 @@ int main() {
     // std::cout << (simulator.get_context()).get_continuous_state()->CopyToVector();
     // std::cout << std::endl << std::endl;
   }
+
+  std::string json_str = "{\"delete\":{},\"setgeometry\":[{\"geometry\":{\"points\":[[1.86657557780192,-0.464247709762942,0.747660221127523],[-1.53370505391172,1.3916316561968,0.504459205256841],[-1.73012210768299,1.39219064159683,-0.427621228005646],[2.73162407272025,-0.31940360668027,0.381326330271418]],\"type\":\"line\"},\"path\":[\"test_line\"]}],\"settransform\":{},\"timestamp\":1492025357657361}";
+  std::vector<std::string> path_vec;
+  path_vec.push_back("remote_tree_seer");
+  path_vec.push_back("cable");
+//  publishLine(json_str, path_vec, lcm);
 
   while (FLAGS_playback) viz_publisher->ReplayCachedSimulation();
   return 0;

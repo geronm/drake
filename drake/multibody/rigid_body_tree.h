@@ -1654,6 +1654,9 @@ class CableDynamicConstraint {
   virtual ~CableDynamicConstraint(void);
 
   template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 3> getWrapPoints(
+      const KinematicsCache<Scalar>& cache) const;
+  template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(
       const KinematicsCache<Scalar>& cache) const;
   template <typename Scalar>

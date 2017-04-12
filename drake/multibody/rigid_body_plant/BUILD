@@ -78,6 +78,7 @@ drake_cc_library(
     deps = [
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
+        "//drake/lcmtypes:viewer2",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/lcm",
         "//drake/systems/primitives:signal_log",
