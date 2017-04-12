@@ -64,6 +64,7 @@ lcm_wrap_types(
   lcmt_simple_car_state_t.lcm
   lcmt_simulation_command.lcm
   lcmt_support_data.lcm
+  lcmt_viewer2_comms.lcm
   lcmt_viewer_command.lcm
   lcmt_viewer_draw.lcm
   lcmt_viewer_geometry_data.lcm

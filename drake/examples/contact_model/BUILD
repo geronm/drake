@@ -81,6 +81,7 @@ drake_cc_binary(
         "//drake/multibody:rigid_body_dynamic_constraint",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/analysis",
+        "//drake/lcmtypes:viewer2",
         "@gflags//:gflags",
     ],
 )

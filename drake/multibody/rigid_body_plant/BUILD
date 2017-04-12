@@ -92,6 +92,7 @@ drake_cc_library(
         ":create_load_robot_message",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/lcmtypes:viewer",
+        "//drake/lcmtypes:viewer2",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/lcm",
         "//drake/systems/primitives:signal_log",

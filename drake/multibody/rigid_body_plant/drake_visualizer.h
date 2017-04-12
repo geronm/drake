@@ -164,6 +164,8 @@ class DrakeVisualizer : public LeafSystem<double> {
   // vector to a lcmt_viewer_draw message.
   const ViewerDrawTranslator draw_message_translator_;
 
+  const RigidBodyTree<double>* tree_{};
+
   // The (optional) log used for recording and playback.
   std::unique_ptr<SignalLog<double>> log_{nullptr};
 };

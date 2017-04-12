@@ -351,10 +351,10 @@
 
   <!-- current form tethers the two paddles together, hooking around one's edge to
        cause it to torque -->
-  <cable name="finger2_cable" min_length="6" max_length="6"> 
+  <cable name="finger2_cable" min_length="2.85" max_length="2.85"> 
     <terminator link="finger1_paddle" xyz="0 0 0" />
-    <pulley link="finger2_paddle" xyz="0 0 0" radius="0" axis="0 0 1"/>
-    <terminator link="finger2_paddle" xyz="-2 0 0"/>
+    <!-- <pulley link="finger2_paddle" xyz="0 0 0" radius="0" axis="0 0 1"/> -->
+    <terminator link="knut" xyz="2 0 0"/>
   </cable>
 
   <!--
