@@ -38,6 +38,9 @@ during stiction).
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/multiplexer.h"
+#include "drake/systems/primitives/demultiplexer.h"
 
 DEFINE_double(accuracy, 5e-5, "Sets the simulation accuracy");
 DEFINE_double(us, 0.9, "The coefficient of static friction");
@@ -49,6 +52,12 @@ DEFINE_double(v_stiction_tolerance, 0.01,
 DEFINE_double(sim_duration, 5, "Amount of time to simulate");
 DEFINE_bool(playback, true,
             "If true, simulation begins looping playback when complete");
+DEFINE_double(fing1_force, -10.0,
+            "The force exerted at proximal torsion joint 1");
+DEFINE_double(fing2_force, 10.0,
+            "The force exerted at proximal torsion joint 2");
+DEFINE_double(fing_spring, 10.0,
+            "Spring constant k");
 
 namespace drake {
 namespace examples {
@@ -125,6 +134,11 @@ int main() {
     std::cout << "finger1_paddle -> " << (tree.get())->FindBodyIndex("finger1_paddle") << std::endl;
     std::cout << "finger2_paddle -> " << (tree.get())->FindBodyIndex("finger2_paddle") << std::endl;
     std::cout << "q_size -> " << (tree.get())->get_num_positions() << std::endl;
+
+
+    for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
+      std::cout << "tree state " << i << ": " << (tree.get())->getStateName(i) << std::endl;
+    }
 
     // Get body indices for the two tensioners
     // int f1_index = (tree.get())->FindBodyIndex("finger1_paddle");
@@ -283,6 +297,12 @@ int main() {
 
   } // endif cables
 
+  // Find the actuators we want to control
+  int finger1_spring_body_id = 5; //(tree.get())->FindBodyIndex("finger1_tensioner"); // (tree.get())->GetActuator("finger1_tensioner_actuator").body_->get_body_index();
+  int finger2_spring_body_id = 10; //(tree.get())->FindBodyIndex("finger2_tensioner");//(tree.get())->GetActuator("finger2_tensioner_actuator").body_->get_body_index();
+  std::cout << "Finger 1 at " << finger1_spring_body_id << std::endl;
+  std::cout << "Finger 2 at " << finger2_spring_body_id << std::endl;
+
   // Alright, let's get to simulating
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>( std::move(tree) );
@@ -308,16 +328,95 @@ int main() {
   builder.Connect(plant->state_output_port(),
                   viz_publisher->get_input_port(0));
 
-  // (geronm) Create a 1-port input to the physical system
-  VectorX<double> source_value(2);
-  source_value(0) = -10.0;
-  source_value(1) = 10.0;
-  const auto force_input =
-      builder.template AddSystem<systems::ConstantVectorSource<double>>(
-          source_value);
-  builder.Connect(force_input->get_output_port(),
-                  plant->get_input_port(0));
 
+  std::cout << "Plant Port Descriptors:" << std::endl;
+  // std::cout << plant->get_input_port(0) << std::endl;
+  std::cout << plant->get_num_input_ports() << std::endl;
+  std::cout << plant->get_num_output_ports() << std::endl;
+
+  // (geronm) Create an input vector to set command torques
+  int num_control_actuators = 2;
+  VectorX<double> source_value(num_control_actuators);
+  source_value(0) = FLAGS_fing1_force;
+  source_value(1) = FLAGS_fing2_force;
+  const auto force_input =
+      builder.template AddSystem<systems::ConstantVectorSource<double>>(source_value);
+  // builder.Connect(force_input->get_output_port(), plant->actuator_command_input_port());
+
+  // (geronm) Create a controller to apply spring law to system springs
+  double finger_spring_constant = FLAGS_fing_spring;
+  int num_spring_actuators = 2;
+  const auto spring_forces1 =
+      builder.template AddSystem<systems::Gain<double>>(-finger_spring_constant, 1);
+  const auto spring_forces2 =
+      builder.template AddSystem<systems::Gain<double>>(-finger_spring_constant, 1);
+  const auto state_outputs_split =
+      builder.template AddSystem<systems::Demultiplexer<double>>(plant->state_output_port().size());
+  std::vector<int> spring_input_joiner;
+  for (int i=0; i<num_spring_actuators; ++i) {
+    spring_input_joiner.push_back(1);
+  }
+  const auto spring_command_vector =
+      builder.template AddSystem<systems::Multiplexer<double>>(spring_input_joiner);
+  // VectorX<double> spring_dummy_forces(num_spring_actuators);
+  // spring_dummy_forces(0) = 5.0;
+  // spring_dummy_forces(1) = 5.0;
+  // const auto spring_forces =  // TODO(geronm) replace this temporary constant system with the proper gain on spring state locations
+  //     builder.template AddSystem<systems::ConstantVectorSource<double>>(spring_dummy_forces);
+
+  // (geronm) Create a multiplexer to concatenate the control inputs and sprint inputs
+  std::vector<int> input_sizes;
+  input_sizes.push_back(num_control_actuators);
+  input_sizes.push_back(num_spring_actuators);
+  // systems:Multiplexer<double>> my_multi(std::vector<int>{2,2});
+  // std::cout << my_multi.get_num_output_ports() << std::endl;
+  const auto input_multiplexer =
+      builder.template AddSystem<systems::Multiplexer<double>>(input_sizes);
+
+  builder.Connect(force_input->get_output_port(), input_multiplexer->get_input_port(0));
+
+  // std::cout << "builder.Connect(force_input->get_output_port(), input_multiplexer->get_input_port(0));" << std::endl;
+
+  builder.Connect(plant->state_output_port(), state_outputs_split->get_input_port(0));
+
+  // std::cout << "builder.Connect(plant->state_output_port(), state_outputs_split->get_input_port(0));" << std::endl;
+
+  builder.Connect(state_outputs_split->get_output_port(finger1_spring_body_id), spring_forces1->get_input_port());
+  builder.Connect(spring_forces1->get_output_port(), spring_command_vector->get_input_port(0));
+
+  // std::cout << "builder.Connect(state_outputs_split->get_output_port(finger1_spring_body_id), spring_command_vector->get_input_port(0));" << std::endl;
+
+  std::cout << "Stuff:" << std::endl;
+  std::cout << state_outputs_split->get_num_output_ports() << std::endl;
+  std::cout << plant->state_output_port().size() << std::endl;
+  // std::cout << state_outputs_split.get_num_output_ports() << std::endl;
+  // std::cout << state_outputs_split.get_num_output_ports() << std::endl;
+
+  builder.Connect(state_outputs_split->get_output_port(finger2_spring_body_id), spring_forces2->get_input_port());
+  builder.Connect(spring_forces2->get_output_port(), spring_command_vector->get_input_port(1));
+
+  // std::cout << "builder.Connect(state_outputs_split->get_output_port(finger2_spring_body_id), spring_command_vector->get_input_port(1));" << std::endl;
+
+//  // builder.Connect(spring_command_vector->get_output_port(0), spring_forces->get_input_port());
+
+  // std::cout << "builder.Connect(spring_command_vector->get_output_port(0), spring_forces->get_input_port());" << std::endl;
+
+//  // builder.Connect(spring_forces->get_output_port(), input_multiplexer->get_input_port(1));
+
+  builder.Connect(spring_command_vector->get_output_port(0), input_multiplexer->get_input_port(1));
+
+  // std::cout << "builder.Connect(spring_forces->get_output_port(), input_multiplexer->get_input_port(1));" << std::endl;
+
+  // std::cout << " " << input_multiplexer->get_output_port(0).size() << " " << plant->actuator_command_input_port().size() << std::endl;
+  builder.Connect(input_multiplexer->get_output_port(0), plant->actuator_command_input_port());
+
+  // std::cout << "builder.Connect(input_multiplexer->get_output_port(0), plant->actuator_command_input_port());" << std::endl;
+
+
+
+  // std::cout << "Spring num inputs: " << spring_forces->get_num_input_ports() << "   num_outputs: " << spring_forces->get_num_output_ports() << std::endl;
+  std::cout << "Control num inputs: " << force_input->get_num_input_ports() << "   num_outputs: " << force_input->get_num_output_ports() << std::endl;
+  std::cout << "Multiplexer num inputs: " << input_multiplexer->get_num_input_ports() << "   num_outputs: " << input_multiplexer->get_num_output_ports() << std::endl;
 
   // Enable contact force visualization.
 //  const ContactResultsToLcmSystem<double>& contact_viz =
@@ -365,6 +464,8 @@ int main() {
   path_vec.push_back("remote_tree_seer");
   path_vec.push_back("cable");
 //  publishLine(json_str, path_vec, lcm);
+
+  std::cout << "Simulating...." << std::endl;
 
   while (FLAGS_playback) viz_publisher->ReplayCachedSimulation();
   return 0;
