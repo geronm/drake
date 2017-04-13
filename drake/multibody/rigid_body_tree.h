@@ -1649,7 +1649,8 @@ class CableDynamicConstraint {
     const std::vector<Eigen::Vector3d>& pulley_xyz_offsets,
     const std::vector<Eigen::Vector3d>& pulley_axes,
     const std::vector<T>& pulley_radii,
-    const std::vector<int>& pulley_num_wraps);
+    const std::vector<int>& pulley_num_wraps,
+    const std::vector<int>& pulley_num_faces);
 
   virtual ~CableDynamicConstraint(void);
 
@@ -1681,4 +1682,5 @@ class CableDynamicConstraint {
   std::vector<Eigen::Vector3d> pulley_axes_;
   std::vector<T> pulley_radii_;
   std::vector<int> pulley_num_wraps_;
+  std::vector<int> pulley_num_faces_;
 };
