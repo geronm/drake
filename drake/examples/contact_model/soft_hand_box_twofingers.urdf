@@ -36,31 +36,31 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="3 3 .1"/>
+        <box size="2 2 .1"/>
       </geometry>
     </visual>
     
         <!-- add points for all the vertices of the hexagon-->
     <visual>
-      <origin xyz=" 1.5 -1.5 0" rpy="0 0 0"/>
+      <origin xyz=" 1.00 -1.00 0" rpy="0 0 0"/>
       <geometry>
         <cylinder radius="0.1" length=".2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="-1.5 -1.5 0" rpy="0 0 0"/>
+      <origin xyz="-1.00 -1.00 0" rpy="0 0 0"/>
       <geometry>
         <cylinder radius="0.1" length=".2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="-1.5  1.5 0" rpy="0 0 0"/>
+      <origin xyz="-1.00  1.00 0" rpy="0 0 0"/>
       <geometry>
         <cylinder radius="0.1" length=".2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz=" 1.5  1.5 0" rpy="0 0 0"/>
+      <origin xyz=" 1.00  1.00 0" rpy="0 0 0"/>
       <geometry>
         <cylinder radius="0.1" length=".2"/>
       </geometry>
@@ -231,11 +231,11 @@
     <dynamics damping=".5"/>
   </joint>
   
-  <force_element name="finger1_tensioner_spring">
+  <!-- <force_element name="finger1_tensioner_spring">
     <linear_spring_damper rest_length="0" stiffness="800000.0" damping=".01">
       <joint name="finger1_tensioner"/>
     </linear_spring_damper>
-  </force_element>
+  </force_element> -->
 
 
 
@@ -387,31 +387,31 @@
     <dynamics damping=".5"/>
   </joint>
   
-  <force_element name="finger2_tensioner_spring">
+  <!-- <force_element name="finger2_tensioner_spring">
     <linear_spring_damper rest_length="0" stiffness="800.0" damping=".01">
       <joint name="finger2_tensioner"/>
     </linear_spring_damper>
-  </force_element>
+  </force_element> -->
 
 
 
   <!-- current form tethers the two paddles together, hooking around one's edge to
        cause it to torque -->
-  <cable name="finger1_cable" min_length="18.1" max_length="18.1"> 
+  <cable name="finger1_cable" min_length="18" max_length="18"> 
     <terminator link="finger1_tensioner" xyz="0 0 0" />
     <pulley link="finger1_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger1_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz=" 1.5  1.5 0" radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz="-1.5  1.5 0"  radius="0" axis="0 0 1"/>
+    <pulley link="box" xyz=" 1.0  1.0 0" radius="0" axis="0 0 1"/>
+    <pulley link="box" xyz="-1.0  1.0 0"  radius="0" axis="0 0 1"/>
     <terminator link="finger1_paddle" xyz="4 1 0"/>
   </cable>
 
-  <cable name="finger2_cable" min_length="18.1" max_length="18.1"> 
+  <cable name="finger2_cable" min_length="18" max_length="18"> 
     <terminator link="finger2_tensioner" xyz="0 0 0" />
     <pulley link="finger2_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger2_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz="-1.5 -1.5 0" radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz=" 1.5 -1.5 0"  radius="0" axis="0 0 1"/>
+    <pulley link="box" xyz="-1.0 -1.0 0" radius="0" axis="0 0 1"/>
+    <pulley link="box" xyz=" 1.0 -1.0 0"  radius="0" axis="0 0 1"/>
     <terminator link="finger2_paddle" xyz="4 1 0"/>
   </cable>
 
@@ -433,5 +433,19 @@
   </cable>
   -->
   <!-- <pulley link="box" xyz="0 1 2" axis="0 0 -1" number_of_faces="6"/> -->
+
+  <!-- these shouldn't be necessary in the long run as we will eventually
+    be able to use spring tags; but for now, simply expose actuators that
+    allow the simulator to supply the proper spring forces. -->
+
+  <transmission type="SimpleTransmission" name="finger1_tensioner">
+    <joint name="finger1_tensioner"/>
+    <actuator name="finger1_tensioner_actuator"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger2_tensioner">
+    <joint name="finger2_tensioner"/>
+    <actuator name="finger2_tensioner_actuator"/>
+  </transmission>
 
 </robot>
