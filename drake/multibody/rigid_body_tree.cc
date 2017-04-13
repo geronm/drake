@@ -3259,7 +3259,8 @@ CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
     const std::vector<Eigen::Vector3d>& pulley_xyz_offsets,
     const std::vector<Eigen::Vector3d>& pulley_axes,
     const std::vector<T>& pulley_radii,
-    const std::vector<int>& pulley_num_wraps)
+    const std::vector<int>& pulley_num_wraps,
+    const std::vector<int>& pulley_num_faces)
     // const std::set<int>& model_instance_id_set)
     :   robot_(robot),
         cable_length_(cable_length),
@@ -3267,7 +3268,8 @@ CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
         pulley_xyz_offsets_(pulley_xyz_offsets),
         pulley_axes_(pulley_axes),
         pulley_radii_(pulley_radii),
-        pulley_num_wraps_(pulley_num_wraps) {
+        pulley_num_wraps_(pulley_num_wraps),
+        pulley_num_faces_(pulley_num_faces) {
   // pass
 }
 
@@ -3280,13 +3282,102 @@ template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 3> CableDynamicConstraint<T>::getWrapPoints(
       const KinematicsCache<Scalar>& cache) const {
 
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 3> ret(pulley_link_names_.size(), 3); // default is 1-by-1, one 1D constraint
-  
-  for (size_t i = 0; i < pulley_link_names_.size(); ++i) {
-    auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
+  std::vector<Eigen::Matrix<Scalar, 3, 1>> wrap_points;
+  {
+    for (size_t i = 0; i < pulley_link_names_.size(); ++i) {
+      if (pulley_num_faces_[i] <= 0) {
+        auto cur_wrap_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
                                         this->robot_->FindBodyIndex(pulley_link_names_[i]),
                                         0);
-    ret.row(i) = cur_p.transpose();
+        wrap_points.push_back(cur_wrap_p);
+      } else {
+        std::cout << "Faces pulley (" << pulley_num_faces_[i] << ")" << std::endl;
+        // TODO(geronm) document this limitation better:
+        // Note: at present, each pulley, in determining its wrap point
+        // locations, assumes that the cable will be stretching from the
+        // xyz-center of the previous point to the xyz-center of the
+        // next point. Ie. won't correctly handle ngonal->ngonal.
+        DRAKE_DEMAND(i > 0);
+        DRAKE_DEMAND(i < pulley_link_names_.size() - 1);
+        auto prev_wrap_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i-1],
+                                            this->robot_->FindBodyIndex(pulley_link_names_[i-1]),
+                                            0);
+        auto next_wrap_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i+1],
+                                            this->robot_->FindBodyIndex(pulley_link_names_[i+1]),
+                                            0);
+
+        auto d_wrap_p = next_wrap_p - prev_wrap_p;
+        auto d_wrap_p_n = d_wrap_p.normalized();
+
+        // Determine point locations and which points will be included in wrap
+        // std::vector<Scalar> prev_point_sines;
+        // std::vector<Scalar> next_point_sines;
+        Scalar best_prev_sine = -1; // Note: -1 is safe, because all negative-scoring points are irrelevant
+        Scalar best_next_sine = -1; // Note: -1 is safe, because all negative-scoring points are irrelevant
+        int best_prev_index = -1; 
+        int best_next_index = -1;
+        std::vector<Eigen::Matrix<Scalar, 3, 1>> cur_wrap_points;
+        for (int f = 0; f < pulley_num_faces_[i]; ++f) {
+          Eigen::Matrix<Scalar,3,1> current_point_offset;
+          Scalar theta = 3.14159265 * 2 * f / pulley_num_faces_[i];
+          current_point_offset(0) = pulley_radii_[i] * std::sin(theta);
+          current_point_offset(1) = pulley_radii_[i] * std::cos(theta);
+          current_point_offset(2) = 0;
+
+          std::cout << current_point_offset.transpose() << std::endl;
+
+          auto cur_wrap_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i] + current_point_offset,
+                                            this->robot_->FindBodyIndex(pulley_link_names_[i]),
+                                            0);
+          
+          cur_wrap_points.push_back(cur_wrap_p);
+
+          auto d_cur_prev_p_n = (cur_wrap_p - prev_wrap_p).normalized();
+          auto d_cur_next_p_n = (cur_wrap_p - next_wrap_p).normalized();
+
+          Scalar prev_sine = d_wrap_p_n.cross(d_cur_prev_p_n).dot(pulley_axes_[i]);
+          Scalar next_sine = d_wrap_p_n.cross(d_cur_next_p_n).dot(pulley_axes_[i]);
+          
+          std::cout << prev_sine << std::endl;
+          std::cout << next_sine << std::endl;
+
+          // prev_point_sines.push_back(prev_sine);
+          // next_point_sines.push_back(next_sine);
+
+          if (prev_sine > best_prev_sine) { best_prev_sine = prev_sine; best_prev_index = f; }
+          if (next_sine > best_next_sine) { best_next_sine = next_sine; best_next_index = f; }
+        }
+
+        // Take only points with positive sines. Most positive for prev is the first
+        // wrap point, most positive for next is last wrap point
+        if (best_prev_sine > 0) {
+          // Cable should wrap from prev
+          DRAKE_DEMAND(0 <= best_prev_index && best_prev_index < pulley_num_faces_[i]);
+          DRAKE_DEMAND(0 <= best_next_index && best_next_index < pulley_num_faces_[i]);
+
+          int d_index = 1;
+          if (pulley_axes_[i](2) < 0) {
+            d_index = -d_index;
+          }
+
+          wrap_points.push_back(cur_wrap_points[best_prev_index]);
+          for (int w=(best_prev_index+d_index)%(pulley_num_faces_[i]);
+              (w-d_index+pulley_num_faces_[i])%(pulley_num_faces_[i]) != best_next_index;
+                  w=(w+d_index)%(pulley_num_faces_[i])) {
+            wrap_points.push_back(cur_wrap_points[w]);
+          }
+        }
+      }
+    }
+  }
+
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 3> ret(wrap_points.size(), 3); // default is 1-by-1, one 1D constraint
+
+  for (size_t i = 0; i < wrap_points.size(); ++i) {
+      // auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
+      //                                     this->robot_->FindBodyIndex(pulley_link_names_[i]),
+      //                                     0);
+      ret.row(i) = wrap_points[i].transpose();
   }
 
   return ret;

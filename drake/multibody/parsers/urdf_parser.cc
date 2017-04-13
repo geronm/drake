@@ -729,6 +729,7 @@ void ParsePulley( RigidBodyTree<double>* tree,
                   std::vector<Eigen::Vector3d>& pulley_axes,
                   std::vector<double>& pulley_radii,
                   std::vector<int>& pulley_num_wraps,
+                  std::vector<int>& pulley_num_faces,
                   XMLElement* pulley_node,
                   int model_instance_id,
                   bool is_terminator) {
@@ -741,6 +742,7 @@ void ParsePulley( RigidBodyTree<double>* tree,
   Vector3d axis(0, 0, 0);
   double radius = 0.0;
   int number_of_wraps = 0;
+  int number_of_faces = 0; // if this is greater that 0, then we have a polygonal pulley
 
   // Obtains the relevant frame id.
   {
@@ -799,6 +801,14 @@ void ParsePulley( RigidBodyTree<double>* tree,
         parseScalarAttribute(pulley_node, "number_of_wraps", number_of_wraps);
       }
     }
+
+    // Pulley has a number_of_wraps
+    {
+      const char* attr = pulley_node->Attribute("number_of_faces");
+      if (attr) {
+        parseScalarAttribute(pulley_node, "number_of_faces", number_of_faces);
+      }
+    }
   }
 
   // Grow all the data structures together TODO(geronm) have this
@@ -809,6 +819,7 @@ void ParsePulley( RigidBodyTree<double>* tree,
   pulley_axes.push_back(axis);
   pulley_radii.push_back(radius);
   pulley_num_wraps.push_back(number_of_wraps);
+  pulley_num_faces.push_back(number_of_faces);
 }
 
 
@@ -827,6 +838,7 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
   std::vector<Eigen::Vector3d> pulley_axes;
   std::vector<double> pulley_radii;
   std::vector<int> pulley_num_wraps;
+  std::vector<int> pulley_num_faces;
 
   // Parse Cable itself's parameters
 
@@ -848,7 +860,7 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
   {
     // Start with first terminator
     XMLElement* terminator_node = node->FirstChildElement("terminator");
-    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps,
+    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
                     terminator_node, model_instance_id, true);
   }
 
@@ -863,8 +875,8 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
       }
     }
 
-    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps,
-                    pulley_node, model_instance_id, false);
+    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
+                    pulley_node, model_instance_id,false);
   }
 
 
@@ -872,7 +884,7 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
     // End with second terminator
     XMLElement* terminator_node = node->FirstChildElement("terminator");
     terminator_node = terminator_node->NextSiblingElement("terminator");
-    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps,
+    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
                     terminator_node, model_instance_id, true);
   }
 
@@ -882,7 +894,8 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
                                                   pulley_xyz_offsets,
                                                   pulley_axes,
                                                   pulley_radii,
-                                                  pulley_num_wraps);
+                                                  pulley_num_wraps,
+                                                  pulley_num_faces);
 
 
   tree->constraint_cables.push_back(cable_constraint);

@@ -202,6 +202,9 @@ int main() {
     std::vector<Eigen::Vector3d> pulley_axes;
     std::vector<double> pulley_radii;
     std::vector<int> pulley_num_wraps;
+    std::vector<int> pulley_num_faces;
+
+    std::cout << "Sin of pi is: " << std::sin(3.14159) << std::endl;
 
     pulley_link_names.push_back("finger1_paddle");
     pulley_link_names.push_back("finger2_paddle");
@@ -246,7 +249,11 @@ int main() {
     pulley_num_wraps.push_back(0);
     pulley_num_wraps.push_back(0);
 
-    CableDynamicConstraint<double> cableConstraint(tree.get(), cable_length, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps);
+    pulley_num_faces.push_back(0);
+    pulley_num_faces.push_back(0);
+    pulley_num_faces.push_back(0);
+
+    CableDynamicConstraint<double> cableConstraint(tree.get(), cable_length, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces);
 
     std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
     std::cout << "  cableConstraint.getNumPositionConstraints() -> " << cableConstraint.getNumPositionConstraints() << std::endl;
