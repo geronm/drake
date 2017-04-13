@@ -38,6 +38,9 @@
       <geometry>
         <box size="2 2 .1"/>
       </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
     </visual>
     
         <!-- add points for all the vertices of the hexagon-->
