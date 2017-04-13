@@ -131,50 +131,47 @@ void DrawCables(const RigidBodyTree<double>* tree,
   std::string json_4 = "}";
 
   // Make the points in a vector:
-  Eigen::VectorXd q(tree->get_num_positions());
-  for (int i=0; i<tree->get_num_positions(); ++i) {
-    q(i) = state.GetAtIndex(i);
-  }
-  KinematicsCache<double> cache = tree->doKinematics(q);
-  for (size_t c = 0; c < tree->constraint_cables.size(); ++c) {
-    std::string points_str="";
-    {
-      auto wrapPoints = tree->constraint_cables[c].getWrapPoints(cache);
+  if (tree->constraint_cables.size() > 0) {
+    Eigen::VectorXd q(tree->get_num_positions());
+    for (int i=0; i<tree->get_num_positions(); ++i) {
+      q(i) = state.GetAtIndex(i);
+    }
+    KinematicsCache<double> cache = tree->doKinematics(q);
+    for (size_t c = 0; c < tree->constraint_cables.size(); ++c) {
+      std::string points_str="";
+      {
+        auto wrapPoints = tree->constraint_cables[c].getWrapPoints(cache);
 
-      std::ostringstream stringStream;
-      stringStream << "[";
-      for (int row = 0; row < wrapPoints.rows(); row++) {
-        if (row > 0) {
-          stringStream << ",";
-        }
+        std::ostringstream stringStream;
         stringStream << "[";
-        for (int col = 0; col < wrapPoints.cols(); col++) {
-          if (col > 0) {
+        for (int row = 0; row < wrapPoints.rows(); row++) {
+          if (row > 0) {
             stringStream << ",";
           }
-          stringStream << wrapPoints(row, col);
+          stringStream << "[";
+          for (int col = 0; col < wrapPoints.cols(); col++) {
+            if (col > 0) {
+              stringStream << ",";
+            }
+            stringStream << wrapPoints(row, col);
+          }
+          stringStream << "]";
         }
         stringStream << "]";
+
+        points_str = stringStream.str();
       }
-      stringStream << "]";
 
-      points_str = stringStream.str();
+      // std::string dummy_points = "[[1.86657557780192,-0.464247709762942,0.747660221127523],[-1.53370505391172,1.3916316561968,0.504459205256841],[-1.73012210768299,1.39219064159683,-0.427621228005646],[2.73162407272025,-0.31940360668027,0.381326330271418]]";
+      std::string path_prefix = "test_line";
+      // std::string dummy_time = "1492025357657361";
+     
+      std::ostringstream stringStream;
+      stringStream << json_1 << points_str << json_2 << path_prefix << c << json_3 << now << json_4;
+      std::string json_str = stringStream.str();
+
+      PublishLine(json_str, lcm, now);
     }
-
-    std::cout << "cable points:" << std::endl;
-    std::cout << points_str << std::endl;
-
-    // std::string dummy_points = "[[1.86657557780192,-0.464247709762942,0.747660221127523],[-1.53370505391172,1.3916316561968,0.504459205256841],[-1.73012210768299,1.39219064159683,-0.427621228005646],[2.73162407272025,-0.31940360668027,0.381326330271418]]";
-    std::string dummy_path = "test_line";
-    std::string dummy_time = "1492025357657361";
-   
-    std::ostringstream stringStream;
-    stringStream << json_1 << points_str << json_2 << dummy_path << json_3 << dummy_time << json_4;
-    std::string json_str = stringStream.str();
-
-    std::cout << "json:" << json_str << std::endl;
-
-    PublishLine(json_str, lcm, now);
   }
 }
 
