@@ -125,7 +125,7 @@ void DrawCables(const RigidBodyTree<double>* tree,
                   drake::lcm::DrakeLcmInterface* lcm,
                   BasicVector<double>& state, long long int now) {
   // TODO(geronm) use state + tree to make lines positions. For now, it will be random
-  std::string json_1 = "{\"delete\":{},\"setgeometry\":[{\"geometry\":{\"points\":";
+  std::string json_1 = "{\"delete\":{},\"setgeometry\":[{\"geometry\":{\"color\":[0.0,0.0,0.0,1.0],\"points\":";
   std::string json_2 = ",\"type\":\"line\"},\"path\":[\"";
   std::string json_3 = "\"]}],\"settransform\":{},\"timestamp\":";
   std::string json_4 = "}";
