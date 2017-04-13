@@ -31,7 +31,7 @@
   <link name="box">
     <inertial>
       <mass value=".5"/>
-      <inertia ixx="0.506667" ixy="0.000000" ixz="0.000000" iyy="1.000000" iyz="0.000000" izz="0.506667" />
+      <inertia ixx="0.5" ixy="0.000000" ixz="0.000000" iyy="0.500000" iyz="0.000000" izz=".506667" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -68,13 +68,21 @@
         <cylinder radius="0.1" length=".2"/>
       </geometry>
     </visual>
-  </link> 
+  </link>
 
+  <joint name="box_rotated" type="continuous">
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="box_y"/>
+    <child link="box"/>
+    <!-- <dynamics damping="0.5"/> -->
+  </joint>
+  <link name="box_y" />
   <joint name="box_y" type="prismatic">
     <origin xyz="0 0 0"/>
     <axis xyz="0 1 0"/>
     <parent link="box_x"/>
-    <child link="box"/>
+    <child link="box_y"/>
     <!-- <dynamics damping="0.5"/> -->
   </joint>
   <link name="box_x" />
