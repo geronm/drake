@@ -3443,26 +3443,41 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
       const KinematicsCache<Scalar>& cache) const {
   this->robot_->CheckCacheValidity(cache);
   
+  // Fill active_set with the ids of wrap pulleys, in order (ending with a suffix of -1's)
+  int active_set[pulley_full_xyz_offsets_.size()];
+  GetActiveSet(cache, active_set);
+  
+  size_t num_active_points = 0;
+  for (size_t i_full = 0; (i_full < pulley_full_xyz_offsets_.size()) && (active_set[i_full] != -1); i_full++) {
+    num_active_points = i_full+1;
+  }
+
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(1, 1); // default is 1-by-1, one 1D constraint
 
   Scalar phi = 0.0;
 
-  // Need at least 2 anchor points in order for there to be any length to phi
-  if (pulley_link_names_.size() >= 2) {
-    auto last_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[0],
-                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+  if (num_active_points > 1) {
+  
+    size_t i_pop = 0;
+
+    // Need at least 2 anchor points in order for there to be any length to phi
+    auto last_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[active_set[i_pop]],
+                                      this->robot_->FindBodyIndex(pulley_full_link_names_[active_set[i_pop]]),
                                       0);
 
-    for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
+    for (i_pop = 1; i_pop < num_active_points; ++i_pop) {
       {  // position constraint
-        auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
-                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+        int i_full = active_set[i_pop];
+
+        auto cur_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[i_full],
+                                        this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                         0);
         phi += (cur_p - last_p).norm();
 
         last_p = cur_p;
       }
     }
+
   }
 
   phi -= cable_length_;
@@ -3478,6 +3493,15 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<T>:
                             bool in_terms_of_qdot) const {
   this->robot_->CheckCacheValidity(cache);
 
+  // Fill active_set with the ids of wrap pulleys, in order (ending with a suffix of -1's)
+  int active_set[pulley_full_xyz_offsets_.size()];
+  GetActiveSet(cache, active_set);
+  
+  size_t num_active_points = 0;
+  for (size_t i_full = 0; (i_full < pulley_full_xyz_offsets_.size()) && (active_set[i_full] != -1); i_full++) {
+    num_active_points = i_full+1;
+  }
+
   // Checked with Twan; in_terms_of_qdot will change the structures of the vectors returned
   // by RigidBodyTree::transformPoints and RigidBodyTree::transformPointsJacobian, but makes
   // it in terms of v rather than q or something else. Can offload this to transformPointsJacobian.
@@ -3488,23 +3512,29 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> CableDynamicConstraint<T>:
   ret.setZero();
 
   // Need at least 2 anchor points in order for there to be any length to phi
-  if (pulley_link_names_.size() >= 2) {
-    auto last_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[0],
-                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+  if (num_active_points > 1) {
+
+    size_t i_pop = 0;
+    int i_full = active_set[i_pop];
+
+    auto last_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[i_full],
+                                      this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                       0);
-    auto d_last_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[0],
-                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+    auto d_last_p = this->robot_->transformPointsJacobian(cache, pulley_full_xyz_offsets_[i_full],
+                                      this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                       0,
                                       in_terms_of_qdot);
 
     // Every pulley adds some length to phi
-    for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
+    for (i_pop = 1; i_pop < num_active_points; ++i_pop) {
+      i_full = active_set[i_pop];
+
       {  // position constraint
-        auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
-                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+        auto cur_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[i_full],
+                                        this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                         0);
-        auto d_cur_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[i],
-                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+        auto d_cur_p = this->robot_->transformPointsJacobian(cache, pulley_full_xyz_offsets_[i_full],
+                                        this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                         0,
                                         in_terms_of_qdot);
 
@@ -3563,6 +3593,15 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
 
   this->robot_->CheckCacheValidity(cache);
 
+  // Fill active_set with the ids of wrap pulleys, in order (ending with a suffix of -1's)
+  int active_set[pulley_full_xyz_offsets_.size()];
+  GetActiveSet(cache, active_set);
+  
+  size_t num_active_points = 0;
+  for (size_t i_full = 0; (i_full < pulley_full_xyz_offsets_.size()) && (active_set[i_full] != -1); i_full++) {
+    num_active_points = i_full+1;
+  }
+
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(1,1);
   ret.setZero();
 
@@ -3570,30 +3609,36 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> CableDynamicConstraint<T>::positionCons
   auto v = cache.getV();
 
   // Need at least 2 anchor points in order for there to be any length to phi
-  if (pulley_link_names_.size() >= 2) {
-    auto last_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[0],
-                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+  if (num_active_points > 1) {
+
+    size_t i_pop = 0;
+    int i_full = active_set[i_pop];
+
+    auto last_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[i_full],
+                                      this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                       0);
-    auto d_last_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[0],
-                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+    auto d_last_p = this->robot_->transformPointsJacobian(cache, pulley_full_xyz_offsets_[i_full],
+                                      this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                       0,
                                       false);
-    auto jdv_last_p = this->robot_->transformPointsJacobianDotTimesV(cache, pulley_xyz_offsets_[0],
-                                      this->robot_->FindBodyIndex(pulley_link_names_[0]),
+    auto jdv_last_p = this->robot_->transformPointsJacobianDotTimesV(cache, pulley_full_xyz_offsets_[i_full],
+                                      this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                       0);
 
     // Every cable segment adds some length to phi
-    for (size_t i = 1; i < pulley_link_names_.size(); ++i) {
+    for (i_pop = 1; i_pop < num_active_points; ++i_pop) {
+      i_full = active_set[i_pop];
+
       {  // position constraint
-        auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
-                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+        auto cur_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[i_full],
+                                        this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                         0);
-        auto d_cur_p = this->robot_->transformPointsJacobian(cache, pulley_xyz_offsets_[i],
-                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+        auto d_cur_p = this->robot_->transformPointsJacobian(cache, pulley_full_xyz_offsets_[i_full],
+                                        this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                         0,
                                         false);
-        auto jdv_cur_p = this->robot_->transformPointsJacobianDotTimesV(cache, pulley_xyz_offsets_[i],
-                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
+        auto jdv_cur_p = this->robot_->transformPointsJacobianDotTimesV(cache, pulley_full_xyz_offsets_[i_full],
+                                        this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
                                         0);
 
         auto vec = (cur_p - last_p);

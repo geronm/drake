@@ -36,7 +36,8 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 .7853982"/>
       <geometry>
-        <box size="2 2 .1"/>
+        <!-- <box size="2 2 .1"/>-->
+        <cylinder radius="1.416" length=".1"/>
       </geometry>
       <material name="">
         <color rgba=".5 .1 .1 1" />
@@ -412,7 +413,7 @@
     <terminator link="finger1_tensioner" xyz="0 0 0" />
     <pulley link="finger1_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger1_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="4"/>
+    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="14"/>
     <terminator link="finger1_paddle" xyz="4 1 0"/>
   </cable>
 
@@ -420,7 +421,7 @@
     <terminator link="finger2_tensioner" xyz="0 0 0" />
     <pulley link="finger2_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger2_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="4"/>
+    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="14"/>
     <terminator link="finger2_paddle" xyz="4 1 0"/>
   </cable>
 
