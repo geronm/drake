@@ -78,7 +78,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody:rigid_body_dynamic_constraint",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:multiplexer",

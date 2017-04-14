@@ -49,7 +49,7 @@
 
     <!-- Box geom -->
 
-    <!-- <visual>
+    <visual>
       <origin xyz="0 0 0" rpy="0 0 .7853982"/>
       <geometry>
         <box size="2 2 .1"/>
@@ -57,55 +57,127 @@
       <material name="">
         <color rgba=".5 .1 .1 1" />
       </material>
-    </visual> -->
+    </visual>
     
 
 
     <!-- Knut -->
 
 
-    <visual>
+<!--     <visual>
       <origin xyz="0 -1.414 0.10" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.1" length=".4"/>
+        <cylinder radius="0.1" length=".2"/>
       </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
     </visual>
     <visual>
       <origin xyz="-1.225 -0.7071 0.10" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.1" length=".4"/>
+        <cylinder radius="0.1" length=".2"/>
       </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
     </visual>
     <visual>
       <origin xyz="-1.225 0.7071 0.10" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.1" length=".4"/>
+        <cylinder radius="0.1" length=".2"/>
       </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
     </visual>
     <visual>
       <origin xyz="0 1.414 0.10" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.1" length=".4"/>
+        <cylinder radius="0.1" length=".2"/>
       </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
     </visual>
     <visual>
       <origin xyz="1.225 0.7071 0.10" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.1" length=".4"/>
+        <cylinder radius="0.1" length=".2"/>
       </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
     </visual>
     <visual>
       <origin xyz="1.225 -0.7071 0.10" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.1" length=".4"/>
+        <cylinder radius="0.1" length=".2"/>
       </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
     </visual>
 
+    <visual>
+      <origin xyz="1.220000 0.000000 0.10" rpy="0 0 0.000000"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.610000 1.056551 0.10" rpy="0 0 1.047198"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.610000 1.056551 0.10" rpy="0 0 2.094395"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-1.220000 0.000000 0.10" rpy="0 0 3.141593"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.610000 -1.056551 0.10" rpy="0 0 4.188790"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.610000 -1.056551 0.10" rpy="0 0 5.235988"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual> -->
 
     <!-- Box -->
 
     
-    <!-- <visual>
+    <visual>
       <origin xyz=" 1.416 0.00 0" rpy="0 0 0"/>
       <geometry>
         <cylinder radius="0.1" length=".2"/>
@@ -128,7 +200,7 @@
       <geometry>
         <cylinder radius="0.1" length=".2"/>
       </geometry>
-    </visual> -->
+    </visual>
 
 
 
@@ -473,19 +545,19 @@
 
   <!-- current form tethers the two paddles together, hooking around one's edge to
        cause it to torque -->
-  <cable name="finger1_cable" min_length="18.25" max_length="18.25"> 
+  <cable name="finger1_cable" min_length="18.00" max_length="18.00"> 
     <terminator link="finger1_tensioner" xyz="0 0 0" />
     <pulley link="finger1_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger1_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="6"/>
+    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="4"/>
     <terminator link="finger1_paddle" xyz="4 1 0"/>
   </cable>
 
-  <cable name="finger2_cable" min_length="18.25" max_length="18.25"> 
+  <cable name="finger2_cable" min_length="18.00" max_length="18.00"> 
     <terminator link="finger2_tensioner" xyz="0 0 0" />
     <pulley link="finger2_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger2_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="6"/>
+    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="4"/>
     <terminator link="finger2_paddle" xyz="4 1 0"/>
   </cable>
 
@@ -521,5 +593,23 @@
     <joint name="finger2_tensioner"/>
     <actuator name="finger2_tensioner_actuator"/>
   </transmission>
+
+<!-- utils: -->
+
+<!--
+<visual>
+<origin xyz="%f %f 0.10" rpy="0 0 %f"/>
+<geometry>
+  <box size=".1 1.414 0.10"/>
+</geometry>
+</visual>
+-->
+<!-- for i in range(6):
+  theta = i*math.pi*2/6
+  x = 1.22*math.cos(theta)
+  y = 1.22*math.sin(theta)
+  print(a % (x,y,theta)) -->
+
+
 
 </robot>
