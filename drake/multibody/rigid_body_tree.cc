@@ -3279,8 +3279,6 @@ CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
       pulley_full_original_indices_.push_back(i);
       pulley_full_link_names_.push_back(pulley_link_names_[i]);
     } else {
-      std::cout << "Faces pulley (" << pulley_num_faces_[i] << ")" << std::endl;
-
       // Determine point locations and which points will be included in wrap
       for (int f = 0; f < pulley_num_faces_[i]; ++f) {
         Eigen::Matrix<double,3,1> current_point_offset;
@@ -3288,8 +3286,6 @@ CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
         current_point_offset(0) = pulley_radii_[i] * std::sin(theta);
         current_point_offset(1) = pulley_radii_[i] * std::cos(theta);
         current_point_offset(2) = 0;
-
-        std::cout << current_point_offset.transpose() << std::endl;
 
         pulley_full_xyz_offsets_.push_back(pulley_xyz_offsets_[i] + current_point_offset);
         pulley_full_original_indices_.push_back(i);
@@ -3325,7 +3321,6 @@ void CableDynamicConstraint<T>::GetActiveSet(
         i_pop++;
         i_full++;
       } else {
-        std::cout << "Faces pulley (" << pulley_num_faces_[i] << ")" << std::endl;
         // TODO(geronm) document this limitation better:
         // Note: at present, each pulley, in determining its wrap point
         // locations, assumes that the cable will be stretching from the
@@ -3365,9 +3360,6 @@ void CableDynamicConstraint<T>::GetActiveSet(
           Scalar prev_sine = d_wrap_p_n.cross(d_cur_prev_p_n).dot(pulley_axes_[i]);
           Scalar next_sine = d_wrap_p_n.cross(d_cur_next_p_n).dot(pulley_axes_[i]);
           
-          std::cout << prev_sine << std::endl;
-          std::cout << next_sine << std::endl;
-
           // prev_point_sines.push_back(prev_sine);
           // next_point_sines.push_back(next_sine);
 
@@ -3397,16 +3389,12 @@ void CableDynamicConstraint<T>::GetActiveSet(
             active_set[i_pop] = i_full + w;
             i_pop++;
           }
-
-          std::cout << "Populated active set for an ngonal pulley." << std::endl;
         }
 
         i_full+=pulley_num_faces_[i];
       } // if
     } // for
   } // i_full scope-encapsulator
-
-  std::cout << "Populated full active set." << std::endl;
 }
 
 template <typename T>
