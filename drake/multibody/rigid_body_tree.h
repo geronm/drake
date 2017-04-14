@@ -1654,6 +1654,11 @@ class CableDynamicConstraint {
 
   virtual ~CableDynamicConstraint(void);
 
+  /** GetActiveSet populates active_set with all the active pulley ids
+      in order, ending with -1's if not all are used */
+  template <typename Scalar>
+  void GetActiveSet(
+    const KinematicsCache<Scalar>& cache, int active_set[]) const;
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 3> getWrapPoints(
       const KinematicsCache<Scalar>& cache) const;
@@ -1683,4 +1688,14 @@ class CableDynamicConstraint {
   std::vector<T> pulley_radii_;
   std::vector<int> pulley_num_wraps_;
   std::vector<int> pulley_num_faces_;
+
+  // "full" vectors are caches corresponding to all possible wrap points, including the
+  // n wrap points of each ngonal pulley which likely are not all
+  // engaged at any given time. The std::vector "pulley_full_active_" tells which
+  // wrap points are active, and is refreshed by calling
+  // CheckActiveSetValidity(KC cache).
+  std::vector<Eigen::Vector3d> pulley_full_xyz_offsets_;
+  std::vector<int> pulley_full_original_indices_;
+  std::vector<std::string> pulley_full_link_names_;
+
 };

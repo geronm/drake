@@ -3270,26 +3270,60 @@ CableDynamicConstraint<T>::CableDynamicConstraint(RigidBodyTree<T>* robot,
         pulley_radii_(pulley_radii),
         pulley_num_wraps_(pulley_num_wraps),
         pulley_num_faces_(pulley_num_faces) {
-  // pass
+
+  // Populate "full" offset vectors, which offsets for 
+  // all vertices of ngonal pulleys
+  for (size_t i = 0; i < pulley_link_names_.size(); ++i) {
+    if (pulley_num_faces_[i] <= 0) {
+      pulley_full_xyz_offsets_.push_back(pulley_xyz_offsets_[i]);
+      pulley_full_original_indices_.push_back(i);
+      pulley_full_link_names_.push_back(pulley_link_names_[i]);
+    } else {
+      std::cout << "Faces pulley (" << pulley_num_faces_[i] << ")" << std::endl;
+
+      // Determine point locations and which points will be included in wrap
+      for (int f = 0; f < pulley_num_faces_[i]; ++f) {
+        Eigen::Matrix<double,3,1> current_point_offset;
+        double theta = 3.14159265 * 2 * f / pulley_num_faces_[i];
+        current_point_offset(0) = pulley_radii_[i] * std::sin(theta);
+        current_point_offset(1) = pulley_radii_[i] * std::cos(theta);
+        current_point_offset(2) = 0;
+
+        std::cout << current_point_offset.transpose() << std::endl;
+
+        pulley_full_xyz_offsets_.push_back(pulley_xyz_offsets_[i] + current_point_offset);
+        pulley_full_original_indices_.push_back(i);
+        pulley_full_link_names_.push_back(pulley_link_names_[i]);
+      }
+    }
+  }
+
+  // Refresh the cache WAIT nvm we don't have a Kinematics Cache yet
+  // CheckActiveSetValidity();
 }
 
 template <typename T>
 CableDynamicConstraint<T>::~CableDynamicConstraint() {}
 
-
 template <typename T>
 template <typename Scalar>
-Eigen::Matrix<Scalar, Eigen::Dynamic, 3> CableDynamicConstraint<T>::getWrapPoints(
-      const KinematicsCache<Scalar>& cache) const {
+void CableDynamicConstraint<T>::GetActiveSet(
+    const KinematicsCache<Scalar>& cache, int active_set[]) const {
+  // First, clear cache to all-false
+  
+  for (size_t i_full = 0; i_full < pulley_full_xyz_offsets_.size(); i_full++) {
+    active_set[i_full] = -1;
+  }
 
-  std::vector<Eigen::Matrix<Scalar, 3, 1>> wrap_points;
   {
+    size_t i_pop = 0;
+    size_t i_full = 0;
     for (size_t i = 0; i < pulley_link_names_.size(); ++i) {
+      DRAKE_DEMAND(pulley_full_original_indices_[i_full] == (int)i);
       if (pulley_num_faces_[i] <= 0) {
-        auto cur_wrap_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
-                                        this->robot_->FindBodyIndex(pulley_link_names_[i]),
-                                        0);
-        wrap_points.push_back(cur_wrap_p);
+        active_set[i_pop] = i_full; // regular default pulley wrap points are always active
+        i_pop++;
+        i_full++;
       } else {
         std::cout << "Faces pulley (" << pulley_num_faces_[i] << ")" << std::endl;
         // TODO(geronm) document this limitation better:
@@ -3316,21 +3350,14 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 3> CableDynamicConstraint<T>::getWrapPoint
         Scalar best_next_sine = -1; // Note: -1 is safe, because all negative-scoring points are irrelevant
         int best_prev_index = -1; 
         int best_next_index = -1;
-        std::vector<Eigen::Matrix<Scalar, 3, 1>> cur_wrap_points;
+        // std::vector<int> cur_wrap_points;
         for (int f = 0; f < pulley_num_faces_[i]; ++f) {
-          Eigen::Matrix<Scalar,3,1> current_point_offset;
-          Scalar theta = 3.14159265 * 2 * f / pulley_num_faces_[i];
-          current_point_offset(0) = pulley_radii_[i] * std::sin(theta);
-          current_point_offset(1) = pulley_radii_[i] * std::cos(theta);
-          current_point_offset(2) = 0;
 
-          std::cout << current_point_offset.transpose() << std::endl;
-
-          auto cur_wrap_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i] + current_point_offset,
-                                            this->robot_->FindBodyIndex(pulley_link_names_[i]),
+          auto cur_wrap_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[i_full + f],
+                                            this->robot_->FindBodyIndex(pulley_full_link_names_[i_full + f]),
                                             0);
           
-          cur_wrap_points.push_back(cur_wrap_p);
+          // cur_wrap_points.push_back(cur_wrap_p);
 
           auto d_cur_prev_p_n = (cur_wrap_p - prev_wrap_p).normalized();
           auto d_cur_next_p_n = (cur_wrap_p - next_wrap_p).normalized();
@@ -3355,29 +3382,55 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 3> CableDynamicConstraint<T>::getWrapPoint
           DRAKE_DEMAND(0 <= best_prev_index && best_prev_index < pulley_num_faces_[i]);
           DRAKE_DEMAND(0 <= best_next_index && best_next_index < pulley_num_faces_[i]);
 
-          int d_index = 1;
+          int d_index = 1; // Note: this is correct
           if (pulley_axes_[i](2) < 0) {
             d_index = -d_index;
           }
 
-          wrap_points.push_back(cur_wrap_points[best_prev_index]);
-          for (int w=(best_prev_index+d_index)%(pulley_num_faces_[i]);
+          // wrap_points.push_back(cur_wrap_points[best_prev_index]);
+          active_set[i_pop] = i_full + best_prev_index;
+          i_pop++;
+          for (int w=(best_prev_index+d_index+pulley_num_faces_[i])%(pulley_num_faces_[i]); // TODO: change code to account for the fact that best_prev_index+d_index can be negative
               (w-d_index+pulley_num_faces_[i])%(pulley_num_faces_[i]) != best_next_index;
-                  w=(w+d_index)%(pulley_num_faces_[i])) {
-            wrap_points.push_back(cur_wrap_points[w]);
+                  w=(w+d_index+pulley_num_faces_[i])%(pulley_num_faces_[i])) {
+            // wrap_points.push_back(cur_wrap_points[w]);
+            active_set[i_pop] = i_full + w;
+            i_pop++;
           }
+
+          std::cout << "Populated active set for an ngonal pulley." << std::endl;
         }
-      }
-    }
+
+        i_full+=pulley_num_faces_[i];
+      } // if
+    } // for
+  } // i_full scope-encapsulator
+
+  std::cout << "Populated full active set." << std::endl;
+}
+
+template <typename T>
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 3> CableDynamicConstraint<T>::getWrapPoints(
+      const KinematicsCache<Scalar>& cache) const {
+  
+  // Fill active_set with the ids of wrap pulleys, in order (ending with a suffix of -1's)
+  int active_set[pulley_full_xyz_offsets_.size()];
+  GetActiveSet(cache, active_set);
+  
+  size_t num_active_points = 0;
+  for (size_t i_full = 0; (i_full < pulley_full_xyz_offsets_.size()) && (active_set[i_full] != -1); i_full++) {
+    num_active_points = i_full+1;
   }
 
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 3> ret(wrap_points.size(), 3); // default is 1-by-1, one 1D constraint
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 3> ret(num_active_points, 3);
 
-  for (size_t i = 0; i < wrap_points.size(); ++i) {
-      // auto cur_p = this->robot_->transformPoints(cache, pulley_xyz_offsets_[i],
-      //                                     this->robot_->FindBodyIndex(pulley_link_names_[i]),
-      //                                     0);
-      ret.row(i) = wrap_points[i].transpose();
+  for (size_t i_pop = 0; i_pop < num_active_points; ++i_pop) {
+    int i_full = active_set[i_pop];
+    auto cur_p = this->robot_->transformPoints(cache, pulley_full_xyz_offsets_[i_full],
+                                        this->robot_->FindBodyIndex(pulley_full_link_names_[i_full]),
+                                        0);
+    ret.row(i_pop) = cur_p.transpose();
   }
 
   return ret;
@@ -4088,6 +4141,8 @@ template class RigidBodyTree<double>;
 // Explicitly instantiate the most common scalar types.
 template class CableDynamicConstraint<double>;
 
+template void CableDynamicConstraint<double>::GetActiveSet(
+      const KinematicsCache<double>& cache, int active_set[]) const;
 template Eigen::Matrix<double, Eigen::Dynamic, 3> CableDynamicConstraint<double>::getWrapPoints(
       const KinematicsCache<double>& cache) const;
 template Eigen::Matrix<double, Eigen::Dynamic, 1> CableDynamicConstraint<double>::positionConstraints(

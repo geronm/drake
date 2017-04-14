@@ -98,7 +98,7 @@
   <link name="finger1_paddle">
     <inertial>
       <mass value="1"/>
-      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="100.125" />
     </inertial>
     <visual>
       <origin xyz="0 0 .2"/>
@@ -254,7 +254,7 @@
   <link name="finger2_paddle">
     <inertial>
       <mass value="1"/>
-      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="100.125" />
     </inertial>
     <visual>
       <origin xyz="0 0 .2"/>
