@@ -32,7 +32,7 @@ during stiction).
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/multibody/constraint/rigid_body_dynamic_constraint.h"
+// #include "drake/multibody/constraint/rigid_body_dynamic_constraint.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -195,37 +195,37 @@ int main() {
     KinematicsCache<double> cache = (tree.get())->doKinematics(q, v, true);
 
     // This is a cable stretching from one tensioner to the other, then in an L-shape to the left thingy
-    double cable_length = 6.0;
-    std::vector<int> pulley_frames;
-    std::vector<std::string> pulley_link_names;
-    std::vector<Eigen::Vector3d> pulley_xyz_offsets;
-    std::vector<Eigen::Vector3d> pulley_axes;
-    std::vector<double> pulley_radii;
-    std::vector<int> pulley_num_wraps;
-    std::vector<int> pulley_num_faces;
+    // double cable_length = 6.0;
+    // std::vector<int> pulley_frames;
+    // std::vector<std::string> pulley_link_names;
+    // std::vector<Eigen::Vector3d> pulley_xyz_offsets;
+    // std::vector<Eigen::Vector3d> pulley_axes;
+    // std::vector<double> pulley_radii;
+    // std::vector<int> pulley_num_wraps;
+    // std::vector<int> pulley_num_faces;
 
     std::cout << "Sin of pi is: " << std::sin(3.14159) << std::endl;
 
-    pulley_link_names.push_back("finger1_paddle");
-    pulley_link_names.push_back("finger2_paddle");
-    pulley_link_names.push_back("finger2_paddle");
+    // pulley_link_names.push_back("finger1_paddle");
+    // pulley_link_names.push_back("finger2_paddle");
+    // pulley_link_names.push_back("finger2_paddle");
 
-    pulley_frames.push_back((tree.get())->FindBodyIndex("finger1_paddle"));
-    pulley_frames.push_back((tree.get())->FindBodyIndex("finger2_paddle"));
-    pulley_frames.push_back((tree.get())->FindBodyIndex("finger2_paddle"));
+    // pulley_frames.push_back((tree.get())->FindBodyIndex("finger1_paddle"));
+    // pulley_frames.push_back((tree.get())->FindBodyIndex("finger2_paddle"));
+    // pulley_frames.push_back((tree.get())->FindBodyIndex("finger2_paddle"));
 
-    pulley_axes.push_back(Eigen::Vector3d::Zero());
-    pulley_axes.push_back(Eigen::Vector3d::Zero());
-    pulley_axes.push_back(Eigen::Vector3d::Zero());
+    // pulley_axes.push_back(Eigen::Vector3d::Zero());
+    // pulley_axes.push_back(Eigen::Vector3d::Zero());
+    // pulley_axes.push_back(Eigen::Vector3d::Zero());
 
-    Eigen::Vector3d xyz_off_1;
-    xyz_off_1.setZero();
-    xyz_off_1(0) = -2.0;
-    xyz_off_1(1) = 0.0;
-    xyz_off_1(2) = 0.0;
-    pulley_xyz_offsets.push_back(Eigen::Vector3d::Zero()); // finger1 paddle
-    pulley_xyz_offsets.push_back(Eigen::Vector3d::Zero());  // finger2 paddle
-    pulley_xyz_offsets.push_back(xyz_off_1);  // finger2 paddle + [2,0,0]'
+    // Eigen::Vector3d xyz_off_1;
+    // xyz_off_1.setZero();
+    // xyz_off_1(0) = -2.0;
+    // xyz_off_1(1) = 0.0;
+    // xyz_off_1(2) = 0.0;
+    // pulley_xyz_offsets.push_back(Eigen::Vector3d::Zero()); // finger1 paddle
+    // pulley_xyz_offsets.push_back(Eigen::Vector3d::Zero());  // finger2 paddle
+    // pulley_xyz_offsets.push_back(xyz_off_1);  // finger2 paddle + [2,0,0]'
 
   //  Teehee: 
   //  5.94333
@@ -241,19 +241,20 @@ int main() {
   //     0.05
 
 
-    pulley_radii.push_back(0.0);
-    pulley_radii.push_back(0.0);
-    pulley_radii.push_back(0.0);
+    // pulley_radii.push_back(0.0);
+    // pulley_radii.push_back(0.0);
+    // pulley_radii.push_back(0.0);
 
-    pulley_num_wraps.push_back(0);
-    pulley_num_wraps.push_back(0);
-    pulley_num_wraps.push_back(0);
+    // pulley_num_wraps.push_back(0);
+    // pulley_num_wraps.push_back(0);
+    // pulley_num_wraps.push_back(0);
 
-    pulley_num_faces.push_back(0);
-    pulley_num_faces.push_back(0);
-    pulley_num_faces.push_back(0);
+    // pulley_num_faces.push_back(0);
+    // pulley_num_faces.push_back(0);
+    // pulley_num_faces.push_back(0);
 
-    CableDynamicConstraint<double> cableConstraint(tree.get(), cable_length, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces);
+    // CableDynamicConstraint<double> cableConstraint(tree.get(), cable_length, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces);
+    CableDynamicConstraint<double> cableConstraint = (tree.get())->constraint_cables[0];
 
     std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
     std::cout << "  cableConstraint.getNumPositionConstraints() -> " << cableConstraint.getNumPositionConstraints() << std::endl;
@@ -296,12 +297,21 @@ int main() {
     cache = (tree.get())->doKinematics(q, v, true);
     std::cout << "q.transpose(): " << std::endl << q.transpose() << std::endl;
     std::cout << "v.transpose(): " << std::endl << v.transpose() << std::endl;
-    std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
+    std::cout << "cable stretching from one tensioner to the other. Measured in q,v: " << std::endl;
     std::cout << "  (tree.get())->constraint_cables[0].getNumPositionConstraints() -> " << (tree.get())->constraint_cables[0].getNumPositionConstraints() << std::endl;
     std::cout << "  (tree.get())->constraint_cables[0].positionConstraints(cache) -> " << (tree.get())->constraint_cables[0].positionConstraints(cache) << std::endl;
     std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache,false) -> " << (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache, false) << std::endl;
     std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache,true)  -> " << (tree.get())->constraint_cables[0].positionConstraintsJacobian(cache, true) << std::endl;
     std::cout << "  (tree.get())->constraint_cables[0].positionConstraintsJacDotTimesV(cache)   -> " << (tree.get())->constraint_cables[0].positionConstraintsJacDotTimesV(cache) << std::endl;
+
+    if ((tree.get())->constraint_cables.size() > 1) {
+      std::cout << "cable stretching from one tensioner to the other (second). Measured in q,v: " << std::endl;
+      std::cout << "  (tree.get())->constraint_cables[1].getNumPositionConstraints() -> " << (tree.get())->constraint_cables[1].getNumPositionConstraints() << std::endl;
+      std::cout << "  (tree.get())->constraint_cables[1].positionConstraints(cache) -> " << (tree.get())->constraint_cables[1].positionConstraints(cache) << std::endl;
+      std::cout << "  (tree.get())->constraint_cables[1].positionConstraintsJacobian(cache,false) -> " << (tree.get())->constraint_cables[1].positionConstraintsJacobian(cache, false) << std::endl;
+      std::cout << "  (tree.get())->constraint_cables[1].positionConstraintsJacobian(cache,true)  -> " << (tree.get())->constraint_cables[1].positionConstraintsJacobian(cache, true) << std::endl;
+      std::cout << "  (tree.get())->constraint_cables[1].positionConstraintsJacDotTimesV(cache)   -> " << (tree.get())->constraint_cables[1].positionConstraintsJacDotTimesV(cache) << std::endl;
+    }
 
     std::cout << "cable stretching from one tensioner to the other. Should have length 4+2 in nominal pose: " << std::endl;
     std::cout << "  (tree.get())->getNumPositionConstraints() -> " << (tree.get())->getNumPositionConstraints() << std::endl;
