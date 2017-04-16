@@ -67,6 +67,8 @@ DEFINE_double(fing2_pad, 0.0,
             "The desired value at paddle revolute joint 2");
 DEFINE_double(fing_spring, 10.0,
             "Spring constant k");
+DEFINE_double(fing_damp, 5.0,
+            "Spring damping constant b");
 DEFINE_double(kp, 1.0,
             "PID gain kp");
 DEFINE_double(kd, 1.0,
@@ -215,18 +217,42 @@ int main() {
     std::cout << "x_desired(" << u << "): " << x_desired_u(u) << "     (" << (tree.get())->getStateName(control_input_indices[u]) << ")" << std::endl;
   }
 
-  for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
-    std::cout << "tree state " << i << ": " << (tree.get())->getStateName(i);
-    if ((tree.get())->getStateName(i) == "finger1_tensioner") {
-      finger1_spring_body_id = i;
-      std::cout << " <-- matched f1t!";
+
+  // Find state parameters for spring PID control
+  std::vector<int> spring_pid_multiplex_input_sizes;
+  std::vector<int> spring_control_input_indices;
+  std::vector<std::string> spring_names_of_actuators;
+  spring_names_of_actuators.push_back("finger1_tensioner");
+  spring_names_of_actuators.push_back("finger2_tensioner");
+  spring_names_of_actuators.push_back("finger1_tensionerdot");
+  spring_names_of_actuators.push_back("finger2_tensionerdot");
+  DRAKE_DEMAND((int)(spring_names_of_actuators.size()) == 2*num_spring_actuators);
+
+  for (size_t u=0; u<spring_names_of_actuators.size(); ++u) {
+    spring_pid_multiplex_input_sizes.push_back(1);
+    for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
+      if ((tree.get())->getStateName(i) == spring_names_of_actuators[u]) {
+        spring_control_input_indices.push_back(i);
+        break;
+      }
     }
-    if ((tree.get())->getStateName(i) == "finger2_tensioner") {
-      finger2_spring_body_id = i;
-      std::cout << " <-- matched f2t!";
-    }
-    std::cout << std::endl;
+    DRAKE_DEMAND(spring_control_input_indices.size() == (u+1));
+    std::cout << "Found state port " << spring_control_input_indices[u] << " for actuator name " << spring_names_of_actuators[u] << std::endl;
   }
+  finger1_spring_body_id = spring_control_input_indices[0];
+  finger2_spring_body_id = spring_control_input_indices[1];
+  // for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
+  //   std::cout << "tree state " << i << ": " << (tree.get())->getStateName(i);
+  //   if ((tree.get())->getStateName(i) == "finger1_tensioner") {
+  //     finger1_spring_body_id = i;
+  //     std::cout << " <-- matched f1t!";
+  //   }
+  //   if ((tree.get())->getStateName(i) == "finger2_tensioner") {
+  //     finger2_spring_body_id = i;
+  //     std::cout << " <-- matched f2t!";
+  //   }
+  //   std::cout << std::endl;
+  // }
 
   Eigen::VectorXd q((tree.get())->get_num_positions());
   q.setZero();
@@ -442,6 +468,12 @@ int main() {
   std::cout << plant->get_num_input_ports() << std::endl;
   std::cout << plant->get_num_output_ports() << std::endl;
 
+
+  // Make available all the state ports of the robot
+  const auto state_outputs_split =
+      builder.template AddSystem<systems::Demultiplexer<double>>(plant->state_output_port().size());
+
+
   // (geronm) Create an input vector to set command torques
 
   // VectorX<double> source_value(num_control_actuators);
@@ -452,25 +484,41 @@ int main() {
   //     builder.template AddSystem<systems::ConstantVectorSource<double>>(source_value);
   // builder.Connect(force_input->get_output_port(), plant->actuator_command_input_port());
 
-  // (geronm) Create a controller to apply spring law to system springs
+  // (geronm) Create a PD controller to apply damped spring laws to system springs
   double finger_spring_constant = FLAGS_fing_spring;
-  const auto spring_forces1 =
-      builder.template AddSystem<systems::Gain<double>>(-finger_spring_constant, 1);
-  const auto spring_forces2 =
-      builder.template AddSystem<systems::Gain<double>>(-finger_spring_constant, 1);
-  const auto state_outputs_split =
-      builder.template AddSystem<systems::Demultiplexer<double>>(plant->state_output_port().size());
-  std::vector<int> spring_input_joiner;
-  for (int i=0; i<num_spring_actuators; ++i) {
-    spring_input_joiner.push_back(1);
+  double finger_damping_constant = FLAGS_fing_damp;
+  // const auto spring_forces1 =
+  //     builder.template AddSystem<systems::Gain<double>>(-finger_spring_constant, 1);
+  // const auto spring_forces2 =
+  //     builder.template AddSystem<systems::Gain<double>>(-finger_spring_constant, 1);
+  
+  // Make PID controller to position-control the springs
+
+  // Make all-zeros input vector to tell our spring to be at rest at pose 0:
+  Eigen::VectorXd spring_x_desired_u(spring_names_of_actuators.size());
+  spring_x_desired_u.setZero();
+  const auto spring_x_desired_input =
+      builder.template AddSystem<systems::ConstantVectorSource<double>>(spring_x_desired_u);
+
+  // Now the PID part of the springs  
+  Eigen::VectorXd spring_kp(num_spring_actuators);
+  spring_kp.setZero();
+  Eigen::VectorXd spring_ki(num_spring_actuators);
+  spring_ki.setZero();
+  Eigen::VectorXd spring_kd(num_spring_actuators);
+  spring_kd.setZero();
+  for (size_t u=0; u<(size_t)num_spring_actuators; ++u) {
+    double u_gain = 1;
+    spring_kp(u) = u_gain * -finger_spring_constant; // arbitrary, as usual
+    spring_kd(u) = u_gain * -finger_damping_constant;
+    spring_ki(u) = u_gain * 0;
   }
-  const auto spring_command_vector =
-      builder.template AddSystem<systems::Multiplexer<double>>(spring_input_joiner);
-  // VectorX<double> spring_dummy_forces(num_spring_actuators);
-  // spring_dummy_forces(0) = 5.0;
-  // spring_dummy_forces(1) = 5.0;
-  // const auto spring_forces =  // TODO(geronm) replace this temporary constant system with the proper gain on spring state locations
-  //     builder.template AddSystem<systems::ConstantVectorSource<double>>(spring_dummy_forces);
+  const auto spring_pid_controller =
+      builder.template AddSystem<systems::PidController<double>>(spring_kp, spring_ki, spring_kd);
+
+  const auto spring_pid_input_multiplexer =
+      builder.template AddSystem<systems::Multiplexer<double>>(spring_pid_multiplex_input_sizes);
+
 
   // (geronm) Create a multiplexer to concatenate the control inputs and sprint inputs
   std::vector<int> input_sizes;
@@ -481,35 +529,46 @@ int main() {
   const auto input_multiplexer =
       builder.template AddSystem<systems::Multiplexer<double>>(input_sizes);
 
-  // builder.Connect(force_input->get_output_port(), input_multiplexer->get_input_port(0));
-
   builder.Connect(plant->state_output_port(), state_outputs_split->get_input_port(0));
-
-  builder.Connect(state_outputs_split->get_output_port(finger1_spring_body_id), spring_forces1->get_input_port());
-  builder.Connect(spring_forces1->get_output_port(), spring_command_vector->get_input_port(0));
-
-  std::cout << "Stuff:" << std::endl;
-  std::cout << state_outputs_split->get_num_output_ports() << std::endl;
-  std::cout << plant->state_output_port().size() << std::endl;
-
-  builder.Connect(state_outputs_split->get_output_port(finger2_spring_body_id), spring_forces2->get_input_port());
-  builder.Connect(spring_forces2->get_output_port(), spring_command_vector->get_input_port(1));
-
-  builder.Connect(spring_command_vector->get_output_port(0), input_multiplexer->get_input_port(1));
 
   builder.Connect(input_multiplexer->get_output_port(0), plant->actuator_command_input_port());
 
-  // std::cout << "Control num inputs: " << force_input->get_num_input_ports() << "   num_outputs: " << force_input->get_num_output_ports() << std::endl;
   std::cout << "Multiplexer num inputs: " << input_multiplexer->get_num_input_ports() << "   num_outputs: " << input_multiplexer->get_num_output_ports() << std::endl;
 
 
+
+  // Wire Spring PID as follows:
+  //
+  // [x_desired] -> pid(0)
+  // state_demult --/--> [q[u1.u2].v[u1.u2]]    ( <-- pid_multiplex)
+  // [q[u1.u2].v[u1.u2]] -> pid(1)
+  // pid(0) -> input_multiplexer(0)
+
+  std::cout << "About to assemble spring PID.." << std::endl;
+
+  std::cout << "spring:  [x_desired] -> pid(0)" << std::endl;
+  builder.Connect(spring_x_desired_input->get_output_port(), spring_pid_controller->get_input_port(0));
+
+  std::cout << "spring:  state_demult --/--> [q[u1:u6].v[u1:u6]]" << std::endl;
+  for (size_t u=0; u<spring_names_of_actuators.size(); ++u) {
+    builder.Connect(state_outputs_split->get_output_port(spring_control_input_indices[u]), spring_pid_input_multiplexer->get_input_port(u));
+  }
+
+  std::cout << "spring:  [q[u1:u6].v[u1:u6]] -> pid(1)" << std::endl;
+  builder.Connect(spring_pid_input_multiplexer->get_output_port(0), spring_pid_controller->get_input_port(1));
+
+  std::cout << "spring:  pid(0) -> input_multiplexer(0)" << std::endl;
+  builder.Connect(spring_pid_controller->get_output_port(0), input_multiplexer->get_input_port(1)); 
+
+  
+  // Make PID controller to position-control the hand:
+  
   // Make dummy x_desired-producing system (to be replaced with a proportional controller from Jacobian control)
   // x_desired defined above (before tree was std::move'd)
   const auto x_desired_input =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(x_desired_u);
   
-
-  // Make PID controller to position-control the hand
+  // PID Part
   Eigen::VectorXd kp(num_control_actuators);
   kp.setZero();
   Eigen::VectorXd ki(num_control_actuators);
@@ -543,7 +602,6 @@ int main() {
   // state_demult --/--> [q[u1:u6].v[u1:u6]]    ( <-- pid_multiplex)
   // [q[u1:u6].v[u1:u6]] -> pid(1)
   // pid(0) -> input_multiplexer(0)
-  //
 
   std::cout << "About to assemble PID.." << std::endl;
 
