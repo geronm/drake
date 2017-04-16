@@ -63,6 +63,7 @@ drake_cc_binary(
     add_test_rule = 1,
     data = [
         "soft_hand_knut_twofingers.urdf",
+        "soft_hand_box_twofingers.urdf",
         "//drake/multibody:models",
     ],
     test_rule_args = [
@@ -82,6 +83,41 @@ drake_cc_binary(
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:multiplexer",
         "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/analysis",
+        "//drake/lcmtypes:viewer2",
+        "@gflags//:gflags",
+    ],
+)
+
+
+drake_cc_binary(
+    name = "soft_hand_jacobian_control",
+    srcs = ["soft_hand_jacobian_control.cc"],
+    add_test_rule = 1,
+    data = [
+        "soft_hand_knut_twofingers.urdf",
+        "soft_hand_box_twofingers.urdf",
+        "soft_hand_box_twofingers_jc.urdf",
+        "//drake/multibody:models",
+    ],
+    test_rule_args = [
+        " --sim_duration=0.01",
+        " --playback=false",
+    ],
+    deps = [
+        "//drake/common:drake_path",
+        "//drake/lcm",
+        "//drake/common",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:gain",
+        "//drake/systems/primitives:multiplexer",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/controllers:pid_controller",
         "//drake/systems/analysis",
         "//drake/lcmtypes:viewer2",
         "@gflags//:gflags",
