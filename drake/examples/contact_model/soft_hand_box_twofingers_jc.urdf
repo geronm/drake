@@ -235,7 +235,7 @@
   <link name="finger1_paddle">
     <inertial>
       <mass value="1"/>
-      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="100.125" />
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz=".125" />
     </inertial>
     <visual>
       <origin xyz="0 0 .2"/>
@@ -313,7 +313,7 @@
 
   <link name="finger1_tensioner">
     <inertial>
-      <mass value="1"/>
+      <mass value=".1"/>
       <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
     </inertial>
     <visual>
@@ -331,7 +331,7 @@
     </visual>
   </link>
 
-  <link name="finger1_counterweight">
+<!--   <link name="finger1_counterweight">
     <inertial>
       <mass value="1"/>
       <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
@@ -343,7 +343,7 @@
         <cylinder radius="1" length="1.2"/>
       </geometry>
     </visual>
-  </link>
+  </link> -->
 
 
   
@@ -352,7 +352,6 @@
     <actuator name="finger1_proximal"/>
   </transmission>
 
-  <!--
   <transmission type="SimpleTransmission" name="finger1_linear">
     <joint name="finger1_linear"/>
     <actuator name="finger1_linear"/>
@@ -362,22 +361,22 @@
     <joint name="finger1_paddle"/>
     <actuator name="finger1_paddle"/>
   </transmission>
-  -->
+  
   <joint name="finger1_tensioner" type="prismatic">
-    <origin xyz="4 -1 0"/>
+    <origin xyz="0 -1 0"/>
     <axis xyz="1 0 0"/>
     <parent link="finger1_paddle"/>
     <child link="finger1_tensioner"/>
     <dynamics damping=".5"/>
   </joint>
   
-  <joint name="finger1_counterweight" type="revolute">
+  <!-- <joint name="finger1_counterweight" type="revolute">
     <origin xyz="3.0 0 0"/>
     <axis xyz="0 0 1"/>
     <parent link="finger1_paddle"/>
     <child link="finger1_counterweight"/>
     <dynamics damping=".5"/>
-  </joint>
+  </joint> -->
   
   <!-- <force_element name="finger1_tensioner_spring">
     <linear_spring_damper rest_length="0" stiffness="800000.0" damping=".01">
@@ -391,7 +390,7 @@
   <link name="finger2_paddle">
     <inertial>
       <mass value="1"/>
-      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="100.125" />
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz=".125" />
     </inertial>
     <visual>
       <origin xyz="0 0 .2"/>
@@ -469,7 +468,7 @@
 
   <link name="finger2_tensioner">
     <inertial>
-      <mass value="1"/>
+      <mass value=".1"/>
       <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
     </inertial>
     <visual>
@@ -487,7 +486,7 @@
     </visual>
   </link>
 
-  <link name="finger2_counterweight">
+  <!-- <link name="finger2_counterweight">
     <inertial>
       <mass value="1"/>
       <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
@@ -499,7 +498,7 @@
         <cylinder radius="1" length="1.2"/>
       </geometry>
     </visual>
-  </link>
+  </link> -->
 
 
   
@@ -508,7 +507,6 @@
     <actuator name="finger2_proximal"/>
   </transmission>
 
-  <!--
   <transmission type="SimpleTransmission" name="finger2_linear">
     <joint name="finger2_linear"/>
     <actuator name="finger2_linear"/>
@@ -518,22 +516,22 @@
     <joint name="finger2_paddle"/>
     <actuator name="finger2_paddle"/>
   </transmission>
-  -->
+  
   <joint name="finger2_tensioner" type="prismatic">
-    <origin xyz="4 -1 0"/>
+    <origin xyz="0 -1 0"/>
     <axis xyz="1 0 0"/>
     <parent link="finger2_paddle"/>
     <child link="finger2_tensioner"/>
     <dynamics damping=".5"/>
   </joint>
   
-  <joint name="finger2_counterweight" type="revolute">
+<!--   <joint name="finger2_counterweight" type="revolute">
     <origin xyz="3.0 0 0"/>
     <axis xyz="0 0 1"/>
     <parent link="finger2_paddle"/>
     <child link="finger2_counterweight"/>
     <dynamics damping=".5"/>
-  </joint>
+  </joint> -->
   
   <!-- <force_element name="finger2_tensioner_spring">
     <linear_spring_damper rest_length="0" stiffness="800.0" damping=".01">
@@ -545,7 +543,7 @@
 
   <!-- current form tethers the two paddles together, hooking around one's edge to
        cause it to torque -->
-  <cable name="finger1_cable" min_length="18.00" max_length="18.00"> 
+  <cable name="finger1_cable" min_length="14.00" max_length="14.00"> 
     <terminator link="finger1_tensioner" xyz="0 0 0" />
     <pulley link="finger1_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger1_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
@@ -553,32 +551,13 @@
     <terminator link="finger1_paddle" xyz="4 1 0"/>
   </cable>
 
-  <cable name="finger2_cable" min_length="18.00" max_length="18.00"> 
+  <cable name="finger2_cable" min_length="14.00" max_length="14.00"> 
     <terminator link="finger2_tensioner" xyz="0 0 0" />
     <pulley link="finger2_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
     <pulley link="finger2_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
     <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="4"/>
     <terminator link="finger2_paddle" xyz="4 1 0"/>
   </cable>
-
-  <!--
-  <cable name="finger1_cable" min_length="6.3" max_length="6.3"> 
-    <terminator link="finger1_paddle" xyz="2 1 2" />
-    <pulley link="box" xyz="0 1 2" axis="0 0 -1" number_of_faces="6"/>
-    <pulley link="finger1_paddle" xyz="-2 1 2" radius="0"/>
-    <pulley link="finger1_paddle" xyz="-3 0 2" radius="1" axis="0 0 1"/>
-    <terminator link="finger1_tensioner" xyz="-1.02 0 2"/>
-  </cable>
-
-  <cable name="finger2_cable" min_length="6.3" max_length="6.3"> 
-    <terminator link="finger2_paddle" xyz="2 1 2" />
-    <pulley link="box" xyz="0 1 2" axis="0 0 -1" number_of_faces="6"/>
-    <pulley link="finger2_paddle" xyz="-2 1 2" radius="0"/>
-    <pulley link="finger2_paddle" xyz="-3 0 2" radius="1" axis="0 0 1"/>
-    <terminator link="finger2_tensioner" xyz="-1.02 0 2"/>
-  </cable>
-  -->
-  <!-- <pulley link="box" xyz="0 1 2" axis="0 0 -1" number_of_faces="6"/> -->
 
   <!-- these shouldn't be necessary in the long run as we will eventually
     be able to use spring tags; but for now, simply expose actuators that
