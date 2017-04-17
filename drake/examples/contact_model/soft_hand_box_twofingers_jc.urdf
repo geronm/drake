@@ -267,15 +267,15 @@
 
   <link name="finger1_proximal">
     <visual>
-      <origin xyz="7.5 .15 .4"/>
+      <origin xyz="6.25 .15 .4"/>
       <geometry>
-        <box size="15 .1 .2"/>
+        <box size="12.5 .1 .2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="7.5 -.15 .4"/>
+      <origin xyz="6.25 -.15 .4"/>
       <geometry>
-        <box size="15 .1 .2"/>
+        <box size="12.5 .1 .2"/>
       </geometry>
     </visual>
     <visual>
@@ -285,13 +285,13 @@
       </geometry>
     </visual>
     <visual>
-      <origin xyz="5 0 .4"/>
+      <origin xyz="7.5 0 .4"/>
       <geometry>
         <cylinder length=".4" radius=".25"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="15 0 .4"/>
+      <origin xyz="12.5 0 .4"/>
       <geometry>
         <cylinder length=".4" radius=".25"/>
       </geometry>
@@ -428,15 +428,15 @@
 
   <link name="finger2_proximal">
     <visual>
-      <origin xyz="7.5 .15 .4"/>
+      <origin xyz="6.25 .15 .4"/>
       <geometry>
-        <box size="15 .1 .2"/>
+        <box size="12.5 .1 .2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="7.5 -.15 .4"/>
+      <origin xyz="6.25 -.15 .4"/>
       <geometry>
-        <box size="15 .1 .2"/>
+        <box size="12.5 .1 .2"/>
       </geometry>
     </visual>
     <visual>
@@ -446,13 +446,13 @@
       </geometry>
     </visual>
     <visual>
-      <origin xyz="5 0 .4"/>
+      <origin xyz="7.5 0 .4"/>
       <geometry>
         <cylinder length=".4" radius=".25"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="15 0 .4"/>
+      <origin xyz="12.5 0 .4"/>
       <geometry>
         <cylinder length=".4" radius=".25"/>
       </geometry>

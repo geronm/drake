@@ -729,7 +729,7 @@ int main() {
 
   std::cout << "Simulating...." << std::endl;
 
-  while (FLAGS_playback) viz_publisher->ReplayCachedSimulation();
+  if (FLAGS_playback) viz_publisher->ReplayCachedSimulation();
   return 0;
 }
 
