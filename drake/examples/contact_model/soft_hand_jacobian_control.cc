@@ -142,14 +142,14 @@ int main() {
   // Little section of code to test QPController
   Eigen::VectorXd p_ij(8);
   p_ij.setZero();
-  p_ij(0) = 0.00;
-  p_ij(1) = 0.00;
-  p_ij(2) = 4.00;
-  p_ij(3) = 0.00;
-  p_ij(4) = 0.00;
-  p_ij(5) = 1.00;
-  p_ij(6) = 4.00;
-  p_ij(7) =-5.00;
+  p_ij(0) =  3.26;
+  p_ij(1) =  0.71 - 2.0;
+  p_ij(2) = 11.14 - 2.0;
+  p_ij(3) = -0.13 - 2.0;
+  p_ij(4) = 11.16 - 2.0;
+  p_ij(5) =  0.11;
+  p_ij(6) =  3.22;
+  p_ij(7) = -0.75;
   Eigen::VectorXd q_manip(2);
   Eigen::MatrixXd jac(2,8);
 
@@ -157,10 +157,13 @@ int main() {
 
   qpc.getQManipAndJac(p_ij, q_manip, jac);
 
+  q_manip(0) += 1.0;
+  q_manip(1) += 1.0;
+
   std::cout << "QP Controller experiment results:" << std::endl;
-  std::cout << p_ij.transpose() << std::endl;
-  std::cout << q_manip.transpose() << std::endl;
-  std::cout << jac << std::endl;
+  std::cout << "p_ij: " << p_ij.transpose() << std::endl;
+  std::cout << "q_manip: " << q_manip.transpose() << std::endl;
+  std::cout << "jac: " << jac << std::endl;
 
 
 
@@ -471,10 +474,12 @@ int main() {
   Eigen::VectorXd q_manip_desired(2);
   q_manip_desired(0) = 7.0;
   q_manip_desired(1) = 0.0;
+  double dt = 0.0113432;
+  double alpha = 0.002;
   const auto q_manip_desired_input =
       builder.template AddSystem<systems::ConstantVectorSource>(q_manip_desired);
   const auto qp_controller_system =
-      builder.template AddSystem<QpControllerSystem>(*(tree.get()), .0113432, 1.0, control_input_indices);
+      builder.template AddSystem<QpControllerSystem>(*(tree.get()), dt, alpha, control_input_indices);
   
 
   // CAN'T USE tree ANYMORE AFTER THIS POINT

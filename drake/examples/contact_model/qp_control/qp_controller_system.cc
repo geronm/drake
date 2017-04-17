@@ -174,12 +174,29 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
     // Don't care about z-value of p_finger
   }
 
-  // Reduce to point-case by collapsing points
+  // Reduce to point-case by collapsing corners
+  //   ^ 0  1
+  // x | 3  2
+  //   +----->
+  //      y
+  p_ij(2*0 + 0) -= 0;
+  p_ij(2*0 + 1) -= kBoxWidth;
+  p_ij(2*1 + 0) -= kBoxWidth;
+  p_ij(2*1 + 1) -= kBoxWidth;
+  p_ij(2*2 + 0) -= kBoxWidth;
+  p_ij(2*2 + 1) -= 0;
+  p_ij(2*3 + 0) -= 0;
+  p_ij(2*3 + 1) -= 0;
+  
 
   std::cout << "Print F" << std::endl;
   Eigen::VectorXd q_manip_ss(2);
   Eigen::MatrixXd d_pmanip_d_pij(2,8);
   qp_controller_.getQManipAndJac(p_ij, q_manip_ss, d_pmanip_d_pij);
+
+  // Transform q_manip_ss back by un-collapsing corners
+  q_manip_ss(0) += (kBoxWidth/2);
+  q_manip_ss(1) += (kBoxWidth/2);
 
   // Go from pointwise-Jacobian back to statewise-Jacobian
   Eigen::MatrixXd d_pij_d_q(8,q_fake.size());
@@ -213,6 +230,11 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   Eigen::MatrixXd q_manip_error = q_manip_desired - q_manip_ss;
   Eigen::VectorXd delta_x_desired = control_alpha_*control_dt_*(d_pmanip_d_q.transpose())*q_manip_error;
 
+  std::cout << "control_alpha_: " << control_alpha_ << std::endl;
+  std::cout << "control_dt_: " << control_dt_ << std::endl;
+  std::cout << "d_pmanip_d_q.transpose(): " << d_pmanip_d_q.transpose() << std::endl;
+  std::cout << "q_manip_error: " << q_manip_error << std::endl;
+
   std::cout << "delta_x_desired: " << std::endl;
   std::cout << delta_x_desired.transpose() << std::endl;
 
@@ -237,26 +259,41 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
     }
   }
   if (state_vector_eigen(0) - state_vector_eigen(3) > -.1) {
-    std::cout << "Over!!" << std::endl;
+    std::cout << "Over a!!" << std::endl;
     double avg = .5 * (state_vector_eigen(0) + state_vector_eigen(3));
     state_vector_eigen(0) = avg - .05;
     state_vector_eigen(3) = avg + .05;
   } else if (state_vector_eigen(0) - state_vector_eigen(3) < -.2) {
-    std::cout << "Over!!" << std::endl;
+    std::cout << "Over b!!" << std::endl;
     double avg = .5 * (state_vector_eigen(0) + state_vector_eigen(3));
     state_vector_eigen(0) = avg - .1;
     state_vector_eigen(3) = avg + .1;
   }
   if (state_vector_eigen(1) - state_vector_eigen(4) > 1.0) {
-    std::cout << "Over2!!" << std::endl;
+    std::cout << "Over2 a!!" << std::endl;
     double avg = .5 * (state_vector_eigen(1) + state_vector_eigen(4));
     state_vector_eigen(1) = avg + .5;
     state_vector_eigen(4) = avg - .5;
   } else if (state_vector_eigen(1) - state_vector_eigen(4) < -1.0) {
-    std::cout << "Over2!!" << std::endl;
+    std::cout << "Over2 b!!" << std::endl;
     double avg = .5 * (state_vector_eigen(1) + state_vector_eigen(4));
     state_vector_eigen(1) = avg - .5;
     state_vector_eigen(4) = avg + .5;
+  }
+
+  if (state_vector_eigen(0) + state_vector_eigen(2) > kPaddleMaxAngle) {
+    std::cout << "Over3 a!!" << std::endl;
+    state_vector_eigen(2) = kPaddleMaxAngle - state_vector_eigen(0);
+  } else if (state_vector_eigen(0) + state_vector_eigen(2) < -kPaddleMaxAngle) {
+    std::cout << "Over3 b!!" << std::endl;
+    state_vector_eigen(2) = -kPaddleMaxAngle - state_vector_eigen(0);
+  }
+  if (state_vector_eigen(3) + state_vector_eigen(5) > kPaddleMaxAngle) {
+    std::cout << "Over3 c!!" << std::endl;
+    state_vector_eigen(5) = kPaddleMaxAngle - state_vector_eigen(3);
+  } else if (state_vector_eigen(3) + state_vector_eigen(5) < -kPaddleMaxAngle) {
+    std::cout << "Over3 d!!" << std::endl;
+    state_vector_eigen(5) = -kPaddleMaxAngle - state_vector_eigen(3);
   }
 
   std::cout << "Print H" << std::endl;
