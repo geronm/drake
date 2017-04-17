@@ -228,11 +228,12 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   std::cout << "Print G" << std::endl;
   // Update x_desired_u via the Jacobian control update rule
   Eigen::MatrixXd q_manip_error = q_manip_desired - q_manip_ss;
-  Eigen::VectorXd delta_x_desired = control_alpha_*control_dt_*(d_pmanip_d_q.transpose())*q_manip_error;
+  Eigen::VectorXd delta_x_desired = control_alpha_*control_dt_*(d_pmanip_d_q.transpose()*(d_pmanip_d_q*d_pmanip_d_q.transpose()).inverse())*q_manip_error;
 
   std::cout << "control_alpha_: " << control_alpha_ << std::endl;
   std::cout << "control_dt_: " << control_dt_ << std::endl;
   std::cout << "d_pmanip_d_q.transpose(): " << d_pmanip_d_q.transpose() << std::endl;
+  std::cout << "d_pmanip_d_q pinv: " << (d_pmanip_d_q.transpose()*(d_pmanip_d_q*d_pmanip_d_q.transpose()).inverse()) << std::endl;
   std::cout << "q_manip_error: " << q_manip_error << std::endl;
 
   std::cout << "delta_x_desired: " << std::endl;
@@ -250,12 +251,19 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 
   // Final guard: project x_desired_u back into safety 
   // TODO Make proper guard; for now, it just says don't go above or below a certain amount
-  double safety_limit = 3.0;
+  Eigen::Vector3d safety_limit(state_vector_eigen.size());
+  safety_limit.setZero();
+  safety_limit(0) = 3.1415;
+  safety_limit(1) = 5;
+  safety_limit(2) = 3.1415;
+  safety_limit(3) = 3.1415;
+  safety_limit(4) = 5;
+  safety_limit(5) = 3.1415;
   for (size_t i=0; i < (size_t)state_vector_eigen.size(); i++) {
-    if (state_vector_eigen(i) > safety_limit) {
-      state_vector_eigen(i) = safety_limit;
-    } else if (state_vector_eigen(i) < -safety_limit) {
-      state_vector_eigen(i) = -safety_limit;
+    if (state_vector_eigen(i) > safety_limit[i]) {
+      state_vector_eigen(i) = safety_limit[i];
+    } else if (state_vector_eigen(i) < -safety_limit[i]) {
+      state_vector_eigen(i) = -safety_limit[i];
     }
   }
   if (state_vector_eigen(0) - state_vector_eigen(3) > -.1) {

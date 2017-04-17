@@ -77,6 +77,14 @@ DEFINE_double(kd, 1.0,
             "PID gain kd");
 DEFINE_double(ki, 0.0,
             "PID gain ki");
+DEFINE_double(alpha, 100.0,
+            "alpha for Jacobian controller");
+DEFINE_double(control_dt, 0.0113432,
+            "control timescale (NOTE: MUST NOT DIVIDE 0.2 INTEGRALLY)");
+DEFINE_double(q_manip_x, 10.0,
+            "q_manip_desired x");
+DEFINE_double(q_manip_y, 0.0,
+            "q_manip_desired y");
 
 namespace drake {
 namespace examples {
@@ -472,10 +480,10 @@ int main() {
 
   // Make x_desired-producing system; needs tree.get()
   Eigen::VectorXd q_manip_desired(2);
-  q_manip_desired(0) = 7.0;
-  q_manip_desired(1) = 0.0;
-  double dt = 0.0113432;
-  double alpha = 0.002;
+  q_manip_desired(0) = FLAGS_q_manip_x;
+  q_manip_desired(1) = FLAGS_q_manip_y;
+  double dt = FLAGS_control_dt;
+  double alpha = FLAGS_alpha;
   const auto q_manip_desired_input =
       builder.template AddSystem<systems::ConstantVectorSource>(q_manip_desired);
   const auto qp_controller_system =

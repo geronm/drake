@@ -90,7 +90,7 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   const double kPaddleHalfDepth{1.0};
   const double kBoxWidth{2.0};
 
-  const double kPaddleMaxAngle{0.01};
+  const double kPaddleMaxAngle{0.08};
 
   const size_t kXDesiredULength{12};
   const size_t kQManipLength{2};
