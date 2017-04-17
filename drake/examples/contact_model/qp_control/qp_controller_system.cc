@@ -216,6 +216,13 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   }
   Eigen::MatrixXd d_pmanip_d_q = d_pmanip_d_pij * d_pij_d_q;
 
+  double kBound = 1.0;
+  for (size_t r=0; r < (size_t)(d_pmanip_d_q.rows()); r++) {
+    for (size_t c=0; c < (size_t)(d_pmanip_d_q.cols()); c++) {
+      d_pmanip_d_q(r,c) = std::max(std::min(d_pmanip_d_q(r,c), kBound), -kBound);
+    }
+  }
+
   std::cout << "p_ij:" << std::endl;
   std::cout << p_ij.transpose() << std::endl;
   std::cout << "d_pij_d_q: " << std::endl;
@@ -254,10 +261,10 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   Eigen::Vector3d safety_limit(state_vector_eigen.size());
   safety_limit.setZero();
   safety_limit(0) = 3.1415;
-  safety_limit(1) = 5;
+  safety_limit(1) = 2.5;
   safety_limit(2) = 3.1415;
   safety_limit(3) = 3.1415;
-  safety_limit(4) = 5;
+  safety_limit(4) = 2.5;
   safety_limit(5) = 3.1415;
   for (size_t i=0; i < (size_t)state_vector_eigen.size(); i++) {
     if (state_vector_eigen(i) > safety_limit[i]) {

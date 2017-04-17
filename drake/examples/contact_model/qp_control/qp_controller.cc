@@ -16,18 +16,60 @@ void QPController::getQManipAndJac(Eigen::VectorXd p_ij, Eigen::VectorXd & q_man
 
   Eigen::VectorXd q_manip_test(2);
 
-  // Take numerical Jacobian dqmanip / dpij
-  double h = 0.5;
-  const double kBound = 100.0;
-  for (size_t i=0; i<(size_t)p_ij.size(); i++) {
-    p_ij(i) += h;
 
-    getQManip(p_ij, q_manip_test);
+  // Clear jacobian
+  jac_out.setZero();
 
-    jac_out(0, i) = std::max(std::min((q_manip_test(0) - q_manip_out(0)) / h, kBound), -kBound);
-    jac_out(1, i) = std::max(std::min((q_manip_test(1) - q_manip_out(1)) / h, kBound), -kBound);
+  {
+    // Take forward numerical Jacobian dqmanip / dpij
+    double h = 0.5;
+    // VectorXd h(p_ij.size());
+    // h.setZero();
+    // h(0) = 1.0;
+    // h(1) = 1.0;
+    // h(2) = 1.0;
+    // h(3) = 1.0;
+    // h(4) = 1.0;
+    // h(5) = 1.0;
+    // h(6) = 1.0;
+    // h(7) = 1.0;
+    const double kBound = 100.0;
+    for (size_t i=0; i<(size_t)p_ij.size(); i++) {
+      p_ij(i) += h;
 
-    p_ij(i) -= h;
+      getQManip(p_ij, q_manip_test);
+
+      jac_out(0, i) += 0.5 * std::max(std::min((q_manip_test(0) - q_manip_out(0)) / h, kBound), -kBound);
+      jac_out(1, i) += 0.5 * std::max(std::min((q_manip_test(1) - q_manip_out(1)) / h, kBound), -kBound);
+
+      p_ij(i) -= h;
+    }
+  }
+
+  {
+    // Take reverse numerical Jacobian dqmanip / dpij
+    double h = -0.5;
+    // VectorXd h(p_ij.size());
+    // h.setZero();
+    // h(0) = 1.0;
+    // h(1) = 1.0;
+    // h(2) = 1.0;
+    // h(3) = 1.0;
+    // h(4) = 1.0;
+    // h(5) = 1.0;
+    // h(6) = 1.0;
+    // h(7) = 1.0;
+    const double kBound = 100.0;
+    for (size_t i=0; i<(size_t)p_ij.size(); i++) {
+      p_ij(i) += h;
+
+      getQManip(p_ij, q_manip_test);
+
+      jac_out(0, i) += 0.5 * std::max(std::min((q_manip_test(0) - q_manip_out(0)) / h, kBound), -kBound);
+      jac_out(1, i) += 0.5 * std::max(std::min((q_manip_test(1) - q_manip_out(1)) / h, kBound), -kBound);
+
+      p_ij(i) -= h;
+    }
   }
 
   // jac_out(0, 2*0 + 0) = 0.25;
