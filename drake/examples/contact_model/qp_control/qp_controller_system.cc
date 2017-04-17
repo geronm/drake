@@ -50,6 +50,13 @@ QpControllerSystem::QpControllerSystem(const RigidBodyTree<double>& robot,
           finger_forwardkin_xyz_(r,c) = -kPaddleHalfWidth;
         }
       }
+      if (r==1) {
+        if (c % 2 == 0) {
+          finger_forwardkin_xyz_(r,c) = kPaddleHalfDepth;
+        } else {
+          finger_forwardkin_xyz_(r,c) = kPaddleHalfDepth;
+        }
+      }
     }
   }
   std::cout << "Hello from QP Controller System!:" << std::endl;
@@ -178,9 +185,9 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   Eigen::MatrixXd d_pij_d_q(8,q_fake.size());
   for (size_t f=0; f<finger_forwardkin_names_.size(); f++) {
     Eigen::Vector3d xyz_vec;
-    xyz_vec(0) = finger_forwardkin_xyz_(f,0);
-    xyz_vec(1) = finger_forwardkin_xyz_(f,1);
-    xyz_vec(2) = finger_forwardkin_xyz_(f,2);
+    xyz_vec(0) = finger_forwardkin_xyz_(0,f);
+    xyz_vec(1) = finger_forwardkin_xyz_(1,f);
+    xyz_vec(2) = finger_forwardkin_xyz_(2,f);
     Eigen::MatrixXd d_p_d_q = this->robot_.template transformPointsJacobian<double>(cache, xyz_vec,
                                         this->robot_.FindBodyIndex(finger_forwardkin_names_[f]),
                                         0,
@@ -240,16 +247,16 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
     state_vector_eigen(0) = avg - .1;
     state_vector_eigen(3) = avg + .1;
   }
-  if (state_vector_eigen(2) - state_vector_eigen(5) > 1.0) {
+  if (state_vector_eigen(1) - state_vector_eigen(4) > 1.0) {
     std::cout << "Over2!!" << std::endl;
-    double avg = .5 * (state_vector_eigen(2) + state_vector_eigen(5));
-    state_vector_eigen(2) = avg + .5;
-    state_vector_eigen(5) = avg - .5;
-  } else if (state_vector_eigen(2) - state_vector_eigen(5) < -1.0) {
+    double avg = .5 * (state_vector_eigen(1) + state_vector_eigen(4));
+    state_vector_eigen(1) = avg + .5;
+    state_vector_eigen(4) = avg - .5;
+  } else if (state_vector_eigen(1) - state_vector_eigen(4) < -1.0) {
     std::cout << "Over2!!" << std::endl;
-    double avg = .5 * (state_vector_eigen(2) + state_vector_eigen(5));
-    state_vector_eigen(2) = avg - .5;
-    state_vector_eigen(5) = avg + .5;
+    double avg = .5 * (state_vector_eigen(1) + state_vector_eigen(4));
+    state_vector_eigen(1) = avg - .5;
+    state_vector_eigen(4) = avg + .5;
   }
 
   std::cout << "Print H" << std::endl;
