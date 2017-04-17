@@ -120,6 +120,8 @@ drake_cc_binary(
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/analysis",
         "//drake/lcmtypes:viewer2",
+        "//drake/examples/contact_model/qp_control:qp_controller",
+        "//drake/examples/contact_model/qp_control:qp_controller_system",
         "@gflags//:gflags",
     ],
 )

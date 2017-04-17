@@ -42,6 +42,8 @@ during stiction).
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/examples/contact_model/qp_control/qp_controller.h"
+#include "drake/examples/contact_model/qp_control/qp_controller_system.h"
 
 DEFINE_double(accuracy, 5e-5, "Sets the simulation accuracy");
 DEFINE_double(us, 0.9, "The coefficient of static friction");
@@ -137,6 +139,32 @@ void publishLine(const std::string json_str, std::vector<std::string> path, drak
 }
 
 int main() {
+  // Little section of code to test QPController
+  Eigen::VectorXd p_ij(8);
+  p_ij.setZero();
+  p_ij(0) = 0.00;
+  p_ij(1) = 0.00;
+  p_ij(2) = 4.00;
+  p_ij(3) = 0.00;
+  p_ij(4) = 0.00;
+  p_ij(5) = 1.00;
+  p_ij(6) = 4.00;
+  p_ij(7) =-5.00;
+  Eigen::VectorXd q_manip(2);
+  Eigen::MatrixXd jac(2,8);
+
+  QPController qpc(0.2, 0.2);
+
+  qpc.getQManipAndJac(p_ij, q_manip, jac);
+
+  std::cout << "QP Controller experiment results:" << std::endl;
+  std::cout << p_ij.transpose() << std::endl;
+  std::cout << q_manip.transpose() << std::endl;
+  std::cout << jac << std::endl;
+
+
+
+
   systems::DiagramBuilder<double> builder;
 
 //  systems::RigidBodyPlant<double>* plant =
@@ -437,6 +465,20 @@ int main() {
   DRAKE_DEMAND(finger1_spring_body_id != -1);
   DRAKE_DEMAND(finger2_spring_body_id != -1);
 
+
+
+  // Make x_desired-producing system; needs tree.get()
+  Eigen::VectorXd q_manip_desired(2);
+  q_manip_desired(0) = 7.0;
+  q_manip_desired(1) = 0.0;
+  const auto q_manip_desired_input =
+      builder.template AddSystem<systems::ConstantVectorSource>(q_manip_desired);
+  const auto qp_controller_system =
+      builder.template AddSystem<QpControllerSystem>(*(tree.get()), .0113432, 1.0, control_input_indices);
+  
+
+  // CAN'T USE tree ANYMORE AFTER THIS POINT
+
   // Alright, let's get to simulating
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>( std::move(tree) );
@@ -535,8 +577,6 @@ int main() {
 
   std::cout << "Multiplexer num inputs: " << input_multiplexer->get_num_input_ports() << "   num_outputs: " << input_multiplexer->get_num_output_ports() << std::endl;
 
-
-
   // Wire Spring PID as follows:
   //
   // [x_desired] -> pid(0)
@@ -562,11 +602,6 @@ int main() {
 
   
   // Make PID controller to position-control the hand:
-  
-  // Make dummy x_desired-producing system (to be replaced with a proportional controller from Jacobian control)
-  // x_desired defined above (before tree was std::move'd)
-  const auto x_desired_input =
-      builder.template AddSystem<systems::ConstantVectorSource<double>>(x_desired_u);
   
   // PID Part
   Eigen::VectorXd kp(num_control_actuators);
@@ -598,16 +633,23 @@ int main() {
 
   // Wire PID as follows:
   //
-  // [x_desired] -> pid(0)
+  // [q_manip_desired] -> qpsystem
+  // qpsystem -> pid(0)
   // state_demult --/--> [q[u1:u6].v[u1:u6]]    ( <-- pid_multiplex)
   // [q[u1:u6].v[u1:u6]] -> pid(1)
   // pid(0) -> input_multiplexer(0)
 
   std::cout << "About to assemble PID.." << std::endl;
 
-  std::cout << " [x_desired] -> pid(0)" << std::endl;
+  std::cout << " [q_manip_desired] (sz " << q_manip_desired_input->get_output_port().size() <<
+                 ") -> qpsystem (sz " << qp_controller_system->get_input_port(0).size() << ")" << std::endl;
 
-  builder.Connect(x_desired_input->get_output_port(), pid_controller->get_input_port(0));
+  builder.Connect(q_manip_desired_input->get_output_port(), qp_controller_system->get_input_port_q_manip_desired());
+
+  std::cout << " qpsystem (sz " << qp_controller_system->get_output_port_x_desired_u().size() <<
+                 ") -> pid(0) (sz " << pid_controller->get_input_port(0).size() << ")" << std::endl;
+
+  builder.Connect(qp_controller_system->get_output_port_x_desired_u(), pid_controller->get_input_port(0));
 
   std::cout << " state_demult --/--> [q[u1:u6].v[u1:u6]]    ( <-- pid_multiplex)" << std::endl;
 
@@ -653,7 +695,7 @@ int main() {
 
   // Print a time stamp update every tenth of a second.  This helps communicate
   // progress in the event that the integrator crawls to a very small timestep.
-  const double kPrintPeriod = 1.0;
+  const double kPrintPeriod = 0.2;
   int step_count =
       static_cast<int>(std::ceil(FLAGS_sim_duration / kPrintPeriod));
   for (int i = 1; i <= step_count; ++i) {
