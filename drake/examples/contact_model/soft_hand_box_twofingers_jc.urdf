@@ -30,9 +30,13 @@
 
   <link name="box">
     <inertial>
+      <mass value=".05"/>
+      <inertia ixx="0.05" ixy="0.000000" ixz="0.000000" iyy="0.0500000" iyz="0.000000" izz=".0506667" />
+    </inertial>
+    <!-- <inertial>
       <mass value=".5"/>
       <inertia ixx="0.5" ixy="0.000000" ixz="0.000000" iyy="0.500000" iyz="0.000000" izz=".506667" />
-    </inertial>
+    </inertial> -->
 
 
     <!-- Cyl geom -->
@@ -207,24 +211,22 @@
 
   </link>
 
-  <joint name="box_rotated" type="continuous">
-    <origin xyz="0 0 0" rpy="0 0 0.7853982"/> <!-- pi/4 -->
+<!--   <joint name="box_rotated" type="continuous">
+    <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
     <axis xyz="0 0 1"/>
     <parent link="box_y"/>
     <child link="box"/>
-    <!-- <dynamics damping="0.5"/> -->
   </joint>
-  <link name="box_y" />
+  <link name="box_y" /> -->
   <joint name="box_y" type="prismatic">
-    <origin xyz="0 0 0"/>
+    <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
     <axis xyz="0 1 0"/>
     <parent link="box_x"/>
-    <child link="box_y"/>
-    <!-- <dynamics damping="0.5"/> -->
+    <child link="box"/>
   </joint>
   <link name="box_x" />
   <joint name="box_x" type="prismatic">
-    <origin xyz="10.0 0 0"/>
+    <origin xyz="10.0 0 0" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
     <parent link="base"/>
     <child link="box_x"/>
