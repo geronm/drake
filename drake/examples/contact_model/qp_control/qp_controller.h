@@ -25,6 +25,8 @@ class QPController {
     */
    void getQManipAndJac(Eigen::VectorXd p_ij, Eigen::VectorXd & q_manip_out, Eigen::MatrixXd & jac_out);
 
+   void getQManip(Eigen::VectorXd p_ij, Eigen::VectorXd & q_manip_out);
+
   // static const double kUpperBoundForContactBasis;
    const double k_1;
    const double k_2;
