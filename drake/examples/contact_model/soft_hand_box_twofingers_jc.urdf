@@ -285,6 +285,12 @@
       </geometry>
     </visual>
     <visual>
+      <origin xyz="5 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+    <visual>
       <origin xyz="15 0 .4"/>
       <geometry>
         <cylinder length=".4" radius=".25"/>
@@ -435,6 +441,12 @@
     </visual>
     <visual>
       <origin xyz="0 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="5 0 .4"/>
       <geometry>
         <cylinder length=".4" radius=".25"/>
       </geometry>
