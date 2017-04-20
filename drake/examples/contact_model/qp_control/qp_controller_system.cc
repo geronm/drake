@@ -273,11 +273,12 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
       state_vector_eigen(i) = -safety_limit[i];
     }
   }
-  if (state_vector_eigen(0) - state_vector_eigen(3) > -.1) {
+  double kPrimaryUpperBound = -0.2;
+  if (state_vector_eigen(0) - state_vector_eigen(3) > kPrimaryUpperBound) {
     std::cout << "Over a!!" << std::endl;
     double avg = .5 * (state_vector_eigen(0) + state_vector_eigen(3));
-    state_vector_eigen(0) = avg - .05;
-    state_vector_eigen(3) = avg + .05;
+    state_vector_eigen(0) = avg + kPrimaryUpperBound/2;
+    state_vector_eigen(3) = avg - kPrimaryUpperBound/2;
   } else if (state_vector_eigen(0) - state_vector_eigen(3) < -.2) {
     std::cout << "Over b!!" << std::endl;
     double avg = .5 * (state_vector_eigen(0) + state_vector_eigen(3));

@@ -708,7 +708,7 @@ int main() {
 
   // Print a time stamp update every tenth of a second.  This helps communicate
   // progress in the event that the integrator crawls to a very small timestep.
-  const double kPrintPeriod = 0.2;
+  const double kPrintPeriod = 5.0;
   int step_count =
       static_cast<int>(std::ceil(FLAGS_sim_duration / kPrintPeriod));
   for (int i = 1; i <= step_count; ++i) {
@@ -728,6 +728,9 @@ int main() {
 //  publishLine(json_str, path_vec, lcm);
 
   std::cout << "Simulating...." << std::endl;
+
+  viz_publisher->ReplayCachedSimulation();
+  viz_publisher->ReplayCachedSimulation();
 
   if (FLAGS_playback) viz_publisher->ReplayCachedSimulation();
   return 0;
