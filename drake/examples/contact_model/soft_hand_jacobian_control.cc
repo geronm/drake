@@ -283,22 +283,24 @@ int main() {
 
 
   // Find state parameters ofr q manip actual
-  std::vector<int> q_manip_actual_multiplex_input_sizes;
-  std::vector<int> q_manip_actual_input_indices;
-  std::vector<std::string> q_manip_actual_names_of_actuators;
-  q_manip_actual_names_of_actuators.push_back("box_x");
-  q_manip_actual_names_of_actuators.push_back("box_y");
+  std::vector<int> x_manip_actual_multiplex_input_sizes;
+  std::vector<int> x_manip_actual_input_indices;
+  std::vector<std::string> x_manip_actual_names_of_actuators;
+  x_manip_actual_names_of_actuators.push_back("box_x");
+  x_manip_actual_names_of_actuators.push_back("box_y");
+  x_manip_actual_names_of_actuators.push_back("box_xdot");
+  x_manip_actual_names_of_actuators.push_back("box_ydot");
 
-  for (size_t u=0; u<q_manip_actual_names_of_actuators.size(); ++u) {
-    q_manip_actual_multiplex_input_sizes.push_back(1);
+  for (size_t u=0; u<x_manip_actual_names_of_actuators.size(); ++u) {
+    x_manip_actual_multiplex_input_sizes.push_back(1);
     for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
-      if ((tree.get())->getStateName(i) == q_manip_actual_names_of_actuators[u]) {
-        q_manip_actual_input_indices.push_back(i);
+      if ((tree.get())->getStateName(i) == x_manip_actual_names_of_actuators[u]) {
+        x_manip_actual_input_indices.push_back(i);
         break;
       }
     }
-    DRAKE_DEMAND(q_manip_actual_input_indices.size() == (u+1));
-    std::cout << "Found state port " << q_manip_actual_input_indices[u] << " for actuator name " << q_manip_actual_names_of_actuators[u] << std::endl;
+    DRAKE_DEMAND(x_manip_actual_input_indices.size() == (u+1));
+    std::cout << "Found state port " << x_manip_actual_input_indices[u] << " for actuator name " << x_manip_actual_names_of_actuators[u] << std::endl;
   }
 
   // for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
@@ -701,17 +703,16 @@ int main() {
 
 
   // Final thing, get q_manip from state demult, wire it into qp_controller_system
-  const auto q_manip_actual_multiplexer =
-      builder.template AddSystem<systems::Multiplexer<double>>(q_manip_actual_multiplex_input_sizes);
+  const auto x_manip_actual_multiplexer =
+      builder.template AddSystem<systems::Multiplexer<double>>(x_manip_actual_multiplex_input_sizes);
 
-  std::cout << " q(0) -> q_manip_mult(0)" << std::endl;
-  builder.Connect(state_outputs_split->get_output_port(q_manip_actual_input_indices[0]), q_manip_actual_multiplexer->get_input_port(0));
-  
-  std::cout << " q(1) -> q_manip_mult(1)" << std::endl;
-  builder.Connect(state_outputs_split->get_output_port(q_manip_actual_input_indices[1]), q_manip_actual_multiplexer->get_input_port(1));
-  
-  std::cout << " q_manip_mult -> qp_controller_system(1)" << std::endl;
-  builder.Connect(q_manip_actual_multiplexer->get_output_port(0), qp_controller_system->get_input_port_q_manip_actual());
+  std::cout << " state_demult --/--> x_manip_mult" << std::endl;
+  for (size_t u=0; u<x_manip_actual_names_of_actuators.size(); ++u) {
+    builder.Connect(state_outputs_split->get_output_port(x_manip_actual_input_indices[u]), x_manip_actual_multiplexer->get_input_port(u));
+  }
+
+  std::cout << " x_manip_mult -> qp_controller_system(1)" << std::endl;
+  builder.Connect(x_manip_actual_multiplexer->get_output_port(0), qp_controller_system->get_input_port_x_manip_actual());
 
 
 
