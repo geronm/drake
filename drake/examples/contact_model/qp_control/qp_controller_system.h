@@ -49,8 +49,8 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   }
 
   inline const systems::InputPortDescriptor<double>&
-  get_input_port_q_manip_actual() const {
-    return get_input_port(input_port_index_q_manip_actual_);
+  get_input_port_x_manip_actual() const {
+    return get_input_port(input_port_index_x_manip_actual_);
   }
 
   
@@ -114,7 +114,7 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   // int input_port_index_humanoid_status_{0};
   // int input_port_index_qp_input_{0};
   int input_port_index_q_manip_desired_{0};
-  int input_port_index_q_manip_actual_{0};
+  int input_port_index_x_manip_actual_{0};
   // int output_port_index_qp_output_{0};
   int output_port_index_x_desired_u_{0};
 

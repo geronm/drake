@@ -32,7 +32,7 @@ QpControllerSystem::QpControllerSystem(const RigidBodyTree<double>& robot,
       finger_forwardkin_xyz_(3, 4),
       control_input_indices_(control_input_indices) {
   input_port_index_q_manip_desired_ = DeclareInputPort(systems::kVectorValued, 2).get_index();
-  input_port_index_q_manip_actual_ = DeclareInputPort(systems::kVectorValued, 2).get_index();
+  input_port_index_x_manip_actual_ = DeclareInputPort(systems::kVectorValued, 4).get_index();
   output_port_index_x_desired_u_ = DeclareOutputPort(systems::kVectorValued, control_input_indices_.size()).get_index();
   // DeclareContinuousState(kXDesiredULength + kQManipLength);
 
@@ -126,11 +126,13 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 
   const Eigen::VectorXd q_manip_desired = EvalVectorInput(context, input_port_index_q_manip_desired_)->CopyToVector();
   
-  Eigen::VectorXd q_manip_actual = EvalVectorInput(context, input_port_index_q_manip_actual_)->CopyToVector();
+  Eigen::VectorXd x_manip_actual = EvalVectorInput(context, input_port_index_x_manip_actual_)->CopyToVector();
   
-  // Forward-kinematics on q_manip_actual (just involves adding the constant offset of the base-- [10 0]')
-  q_manip_actual(0) += 10.0;
-  q_manip_actual(1) += 0.0;
+  // Forward-kinematics on x_manip_actual (just involves adding the constant offset of the base-- [10 0]')
+  x_manip_actual(0) += 10.0;
+  x_manip_actual(1) += 0.0;
+  x_manip_actual(2) += 0.0;
+  x_manip_actual(3) += 0.0;
 
   // Gets the x state
   // Eigen::VectorXd& x_desired_u =
@@ -240,7 +242,15 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 
   std::cout << "Print G" << std::endl;
   // Update x_desired_u via the Jacobian control update rule
-  Eigen::MatrixXd q_manip_error = q_manip_desired - q_manip_actual;
+  Eigen::VectorXd q_manip_actual(2);
+  q_manip_actual(0) = x_manip_actual(0);
+  q_manip_actual(1) = x_manip_actual(1);
+  Eigen::VectorXd qdot_manip_actual(2);
+  qdot_manip_actual(0) = x_manip_actual(2);
+  qdot_manip_actual(1) = x_manip_actual(3);
+
+
+  Eigen::MatrixXd q_manip_error = 1.0*(q_manip_desired - q_manip_actual) + 5.8*(-qdot_manip_actual);
   Eigen::VectorXd delta_x_desired = control_alpha_*control_dt_*(d_pmanip_d_q.transpose()*(d_pmanip_d_q*d_pmanip_d_q.transpose()).inverse())*q_manip_error;
 
   std::cout << "control_alpha_: " << control_alpha_ << std::endl;
@@ -325,7 +335,7 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   // Some prints
   std::cout << "current q_manip_desired: " << q_manip_desired.transpose() << std::endl;
   std::cout << "current q_manip_ss: " << q_manip_ss.transpose() << std::endl;
-  std::cout << "current q_manip_actual: " << q_manip_actual.transpose() << std::endl;
+  std::cout << "current x_manip_actual: " << x_manip_actual.transpose() << std::endl;
   std::cout << "current state_vector_eigen: " << state_vector_eigen.transpose() << std::endl;
 }
 
