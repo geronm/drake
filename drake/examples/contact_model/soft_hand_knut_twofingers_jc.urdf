@@ -1,0 +1,608 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="SimplePulley">
+
+  <material name="skeleton">
+    <color rgba=".7 .7 .7 0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="1 .5 0 0"/>
+  </material>
+  
+  <material name="black">
+    <color rgba="0 0 0 0"/>
+  </material>
+
+  <material name="bone">
+    <color rgba="1 1 .6 0"/>
+  </material>
+  
+  <link name="base">
+    <visual>
+      <origin xyz="0 0 .125"/>
+      <geometry>
+        <box size="1 6 .25"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="box">
+    <inertial>
+      <mass value=".05"/>
+      <inertia ixx="0.05" ixy="0.000000" ixz="0.000000" iyy="0.0500000" iyz="0.000000" izz=".0506667" />
+    </inertial>
+    <!-- <inertial>
+      <mass value=".5"/>
+      <inertia ixx="0.5" ixy="0.000000" ixz="0.000000" iyy="0.500000" iyz="0.000000" izz=".506667" />
+    </inertial> -->
+
+
+    <!-- Cyl geom -->
+
+    <!-- <visual>
+      <origin xyz="0 0 0" rpy="0 0 .7853982"/>
+      <geometry>
+        <cylinder radius="1.416" length=".1"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual> -->
+
+    <!-- Box geom -->
+
+   <!--  <visual>
+      <origin xyz="0 0 0" rpy="0 0 .7853982"/>
+      <geometry>
+        <box size="2 2 .1"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual> -->
+    
+
+
+    <!-- Knut -->
+
+
+    <visual>
+      <origin xyz="0 -1.414 0.10" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-1.225 -0.7071 0.10" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-1.225 0.7071 0.10" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 1.414 0.10" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="1.225 0.7071 0.10" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="1.225 -0.7071 0.10" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+
+    <visual>
+      <origin xyz="1.220000 0.000000 0.10" rpy="0 0 0.000000"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.610000 1.056551 0.10" rpy="0 0 1.047198"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.610000 1.056551 0.10" rpy="0 0 2.094395"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-1.220000 0.000000 0.10" rpy="0 0 3.141593"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.610000 -1.056551 0.10" rpy="0 0 4.188790"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.610000 -1.056551 0.10" rpy="0 0 5.235988"/>
+      <geometry>
+        <box size=".1 1.414 0.10"/>
+      </geometry>
+      <material name="">
+        <color rgba=".5 .1 .1 1" />
+      </material>
+    </visual>
+
+    <!-- Box -->
+
+    
+ <!--    <visual>
+      <origin xyz=" 1.416 0.00 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz=" 0.00  1.416 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-1.416 0.00 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz=" 0.00 -1.416 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length=".2"/>
+      </geometry>
+    </visual> -->
+
+
+
+
+  </link>
+
+<!--   <joint name="box_rotated" type="continuous">
+    <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
+    <axis xyz="0 0 1"/>
+    <parent link="box_y"/>
+    <child link="box"/>
+  </joint>
+  <link name="box_y" /> -->
+  <joint name="box_y" type="prismatic">
+    <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
+    <axis xyz="0 1 0"/>
+    <parent link="box_x"/>
+    <child link="box"/>
+  </joint>
+  <link name="box_x" />
+  <joint name="box_x" type="prismatic">
+    <origin xyz="10.0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="base"/>
+    <child link="box_x"/>
+    <!-- <dynamics damping="0.5"/> -->
+  </joint>
+
+
+  <link name="finger1_paddle">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz=".125" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 .2"/>
+      <geometry>
+        <box size="8 .2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="4 0 .2"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-4 0 .2"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="finger1_proximal">
+    <visual>
+      <origin xyz="6.25 .15 .4"/>
+      <geometry>
+        <box size="12.5 .1 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="6.25 -.15 .4"/>
+      <geometry>
+        <box size="12.5 .1 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="7.5 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="12.5 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="finger1_proximal" type="continuous">
+    <origin xyz="0 2 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger1_proximal"/>
+    <dynamics damping="0"/>
+  </joint>
+  <link name="finger1_linear" />
+  <joint name="finger1_linear" type="prismatic">
+    <origin xyz="10.0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="finger1_proximal"/>
+    <child link="finger1_linear"/>
+    <dynamics damping="0"/>
+  </joint>
+  <joint name="finger1_paddle" type="continuous">
+    <origin xyz="0 0 0" rpy="0 0 3.1416"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger1_linear"/>
+    <child link="finger1_paddle"/>
+  </joint>
+
+  <link name="finger1_tensioner">
+    <inertial>
+      <mass value=".1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+    <visual> 
+      <origin xyz="-.45 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size=".8 .01 .2"/>
+      </geometry>
+    </visual>
+  </link>
+
+<!--   <link name="finger1_counterweight">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+  </link> -->
+
+
+  
+  <transmission type="SimpleTransmission" name="finger1_proximal">
+    <joint name="finger1_proximal"/>
+    <actuator name="finger1_proximal"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger1_linear">
+    <joint name="finger1_linear"/>
+    <actuator name="finger1_linear"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger1_paddle">
+    <joint name="finger1_paddle"/>
+    <actuator name="finger1_paddle"/>
+  </transmission>
+  
+  <joint name="finger1_tensioner" type="prismatic">
+    <origin xyz="0 -1 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="finger1_paddle"/>
+    <child link="finger1_tensioner"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+  <!-- <joint name="finger1_counterweight" type="revolute">
+    <origin xyz="3.0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger1_paddle"/>
+    <child link="finger1_counterweight"/>
+    <dynamics damping=".5"/>
+  </joint> -->
+  
+  <!-- <force_element name="finger1_tensioner_spring">
+    <linear_spring_damper rest_length="0" stiffness="800000.0" damping=".01">
+      <joint name="finger1_tensioner"/>
+    </linear_spring_damper>
+  </force_element> -->
+
+
+
+
+  <link name="finger2_paddle">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz=".125" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 .2"/>
+      <geometry>
+        <box size="8 .2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="4 0 .2"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-4 0 .2"/>
+      <geometry>
+        <box size=".2 2 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="finger2_proximal">
+    <visual>
+      <origin xyz="6.25 .15 .4"/>
+      <geometry>
+        <box size="12.5 .1 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="6.25 -.15 .4"/>
+      <geometry>
+        <box size="12.5 .1 .2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="7.5 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="12.5 0 .4"/>
+      <geometry>
+        <cylinder length=".4" radius=".25"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="finger2_proximal" type="continuous">
+    <origin xyz="0 -2 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger2_proximal"/>
+    <dynamics damping="0"/>
+  </joint>
+  <link name="finger2_linear" />
+  <joint name="finger2_linear" type="prismatic">
+    <origin xyz="10.0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="finger2_proximal"/>
+    <child link="finger2_linear"/>
+    <dynamics damping="0"/>
+  </joint>
+  <joint name="finger2_paddle" type="continuous">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger2_linear"/>
+    <child link="finger2_paddle"/>
+  </joint>
+
+  <link name="finger2_tensioner">
+    <inertial>
+      <mass value=".1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+    <visual> 
+      <origin xyz="-.45 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size=".8 .01 .2"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- <link name="finger2_counterweight">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 1.1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+  </link> -->
+
+
+  
+  <transmission type="SimpleTransmission" name="finger2_proximal">
+    <joint name="finger2_proximal"/>
+    <actuator name="finger2_proximal"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger2_linear">
+    <joint name="finger2_linear"/>
+    <actuator name="finger2_linear"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger2_paddle">
+    <joint name="finger2_paddle"/>
+    <actuator name="finger2_paddle"/>
+  </transmission>
+  
+  <joint name="finger2_tensioner" type="prismatic">
+    <origin xyz="0 -1 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="finger2_paddle"/>
+    <child link="finger2_tensioner"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+<!--   <joint name="finger2_counterweight" type="revolute">
+    <origin xyz="3.0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger2_paddle"/>
+    <child link="finger2_counterweight"/>
+    <dynamics damping=".5"/>
+  </joint> -->
+  
+  <!-- <force_element name="finger2_tensioner_spring">
+    <linear_spring_damper rest_length="0" stiffness="800.0" damping=".01">
+      <joint name="finger2_tensioner"/>
+    </linear_spring_damper>
+  </force_element> -->
+
+
+
+  <!-- current form tethers the two paddles together, hooking around one's edge to
+       cause it to torque -->
+  <cable name="finger1_cable" min_length="14.00" max_length="14.00"> 
+    <terminator link="finger1_tensioner" xyz="0 0 0" />
+    <pulley link="finger1_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="finger1_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="6"/>
+    <terminator link="finger1_paddle" xyz="4 1 0"/>
+  </cable>
+
+  <cable name="finger2_cable" min_length="14.00" max_length="14.00"> 
+    <terminator link="finger2_tensioner" xyz="0 0 0" />
+    <pulley link="finger2_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="finger2_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="6"/>
+    <terminator link="finger2_paddle" xyz="4 1 0"/>
+  </cable>
+
+  <!-- these shouldn't be necessary in the long run as we will eventually
+    be able to use spring tags; but for now, simply expose actuators that
+    allow the simulator to supply the proper spring forces. -->
+
+  <transmission type="SimpleTransmission" name="finger1_tensioner">
+    <joint name="finger1_tensioner"/>
+    <actuator name="finger1_tensioner_actuator"/>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="finger2_tensioner">
+    <joint name="finger2_tensioner"/>
+    <actuator name="finger2_tensioner_actuator"/>
+  </transmission>
+
+<!-- utils: -->
+
+<!--
+<visual>
+<origin xyz="%f %f 0.10" rpy="0 0 %f"/>
+<geometry>
+  <box size=".1 1.414 0.10"/>
+</geometry>
+</visual>
+-->
+<!-- for i in range(6):
+  theta = i*math.pi*2/6
+  x = 1.22*math.cos(theta)
+  y = 1.22*math.sin(theta)
+  print(a % (x,y,theta)) -->
+
+
+
+</robot>
