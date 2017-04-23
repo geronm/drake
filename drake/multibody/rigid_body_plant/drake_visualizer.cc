@@ -123,7 +123,7 @@ void PublishLine(const std::string json_str, drake::lcm::DrakeLcmInterface* lcm,
 
 void DrawCables(const RigidBodyTree<double>* tree,
                   drake::lcm::DrakeLcmInterface* lcm,
-                  BasicVector<double>& state, long long int now) {
+                  const BasicVector<double>& state, long long int now) {
   // TODO(geronm) use state + tree to make lines positions. For now, it will be random
   std::string json_1 = "{\"delete\":{},\"setgeometry\":[{\"geometry\":{\"color\":[0.0,0.0,0.0,1.0],\"points\":";
   std::string json_2 = ",\"type\":\"line\"},\"path\":[\"";
@@ -243,6 +243,16 @@ void DrakeVisualizer::DoPublish(const Context<double>& context) const {
   std::vector<uint8_t> message_bytes;
   draw_message_translator_.Serialize(context.get_time(), *input_vector,
                                      &message_bytes);
+
+  // Also draw cables.
+  auto now = std::chrono::system_clock::now();
+  auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
+  auto value = now_ms.time_since_epoch();
+  long long int duration = value.count();
+  // BasicVector<double> data(log_->get_input_size());
+  // BasicVector<double> input_vector_local(input_vector->size());
+  // input_vector_local.SetFromVector(input_vector->CopyToVector());
+  DrawCables(this->tree_, lcm_, *input_vector, duration);
 
   // Publishes onto the specified LCM channel.
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
