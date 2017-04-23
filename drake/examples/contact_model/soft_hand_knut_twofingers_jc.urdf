@@ -211,18 +211,18 @@
 
   </link>
 
-<!--   <joint name="box_rotated" type="continuous">
+  <joint name="box_rotated" type="continuous">
     <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
     <axis xyz="0 0 1"/>
     <parent link="box_y"/>
     <child link="box"/>
   </joint>
-  <link name="box_y" /> -->
+  <link name="box_y" />
   <joint name="box_y" type="prismatic">
     <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
     <axis xyz="0 1 0"/>
     <parent link="box_x"/>
-    <child link="box"/>
+    <child link="box_y"/>
   </joint>
   <link name="box_x" />
   <joint name="box_x" type="prismatic">

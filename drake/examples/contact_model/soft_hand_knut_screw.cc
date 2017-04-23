@@ -280,6 +280,29 @@ int main() {
   }
   finger1_spring_body_id = spring_control_input_indices[0];
   finger2_spring_body_id = spring_control_input_indices[1];
+
+
+  // Find state parameters ofr q manip actual
+  std::vector<int> x_manip_actual_multiplex_input_sizes;
+  std::vector<int> x_manip_actual_input_indices;
+  std::vector<std::string> x_manip_actual_names_of_actuators;
+  x_manip_actual_names_of_actuators.push_back("box_x");
+  x_manip_actual_names_of_actuators.push_back("box_y");
+  x_manip_actual_names_of_actuators.push_back("box_xdot");
+  x_manip_actual_names_of_actuators.push_back("box_ydot");
+
+  for (size_t u=0; u<x_manip_actual_names_of_actuators.size(); ++u) {
+    x_manip_actual_multiplex_input_sizes.push_back(1);
+    for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
+      if ((tree.get())->getStateName(i) == x_manip_actual_names_of_actuators[u]) {
+        x_manip_actual_input_indices.push_back(i);
+        break;
+      }
+    }
+    DRAKE_DEMAND(x_manip_actual_input_indices.size() == (u+1));
+    std::cout << "Found state port " << x_manip_actual_input_indices[u] << " for actuator name " << x_manip_actual_names_of_actuators[u] << std::endl;
+  }
+
   // for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
   //   std::cout << "tree state " << i << ": " << (tree.get())->getStateName(i);
   //   if ((tree.get())->getStateName(i) == "finger1_tensioner") {
@@ -479,16 +502,15 @@ int main() {
 
 
   // Make x_desired-producing system; needs tree.get()
-  Eigen::VectorXd q_manip_desired(2);
-  q_manip_desired(0) = FLAGS_q_manip_x;
-  q_manip_desired(1) = FLAGS_q_manip_y;
-  double dt = FLAGS_control_dt;
-  double alpha = FLAGS_alpha;
-  const auto q_manip_desired_input =
-      builder.template AddSystem<systems::ConstantVectorSource>(q_manip_desired);
-  const auto qp_controller_system =
-      builder.template AddSystem<QpControllerSystem>(*(tree.get()), dt, alpha, control_input_indices);
-  
+  // Eigen::VectorXd q_manip_desired(2);
+  // q_manip_desired(0) = FLAGS_q_manip_x;
+  // q_manip_desired(1) = FLAGS_q_manip_y;
+  // double dt = FLAGS_control_dt;
+  // double alpha = FLAGS_alpha;
+  // const auto q_manip_desired_input =
+  //     builder.template AddSystem<systems::ConstantVectorSource>(q_manip_desired);
+  // const auto qp_controller_system =
+  //     builder.template AddSystem<QpControllerSystem>(*(tree.get()), dt, alpha, control_input_indices);
 
   // CAN'T USE tree ANYMORE AFTER THIS POINT
 
@@ -638,31 +660,39 @@ int main() {
       builder.template AddSystem<systems::PidController<double>>(kp, ki, kd);
   
   // (geronm) Create a multiplexer to stitch together the PID state controllers
-  // std::vector<int> pid_multiplex_input_sizes;
-  // std::vector<int> control_input_indices;
-  // std::vector<std::string> names_of_actuators;
   const auto pid_input_multiplexer =
       builder.template AddSystem<systems::Multiplexer<double>>(pid_multiplex_input_sizes);
 
+  // (geronm) Get a constant source to command x_desired_u
+  // Eigen::VectorXd x_desired_u(2 * num_control_actuators);
+  // x_desired_u.setZero();
+  // x_desired_u(0+0) = -.1;
+  // x_desired_u(3+0) = .1;
+  // double dt = FLAGS_control_dt;
+  // double alpha = FLAGS_alpha;
+  const auto x_desired_u_input =
+      builder.template AddSystem<systems::ConstantVectorSource>(x_desired_u);
+
+
   // Wire PID as follows:
   //
-  // [q_manip_desired] -> qpsystem
-  // qpsystem -> pid(0)
+  // x_desired_u -> pid(0)
   // state_demult --/--> [q[u1:u6].v[u1:u6]]    ( <-- pid_multiplex)
   // [q[u1:u6].v[u1:u6]] -> pid(1)
   // pid(0) -> input_multiplexer(0)
 
   std::cout << "About to assemble PID.." << std::endl;
 
-  std::cout << " [q_manip_desired] (sz " << q_manip_desired_input->get_output_port().size() <<
-                 ") -> qpsystem (sz " << qp_controller_system->get_input_port(0).size() << ")" << std::endl;
+  // std::cout << " [q_manip_desired] (sz " << q_manip_desired_input->get_output_port().size() <<
+  //                ") -> qpsystem (sz " << qp_controller_system->get_input_port(0).size() << ")" << std::endl;
+  // builder.Connect(q_manip_desired_input->get_output_port(), qp_controller_system->get_input_port_q_manip_desired());
+  // std::cout << " qpsystem (sz " << qp_controller_system->get_output_port_x_desired_u().size() <<
+  //                ") -> pid(0) (sz " << pid_controller->get_input_port(0).size() << ")" << std::endl;
+  // builder.Connect(qp_controller_system->get_output_port_x_desired_u(), pid_controller->get_input_port(0));
 
-  builder.Connect(q_manip_desired_input->get_output_port(), qp_controller_system->get_input_port_q_manip_desired());
+  std::cout << " x_desired_u -> pid(0)" << std::endl;
 
-  std::cout << " qpsystem (sz " << qp_controller_system->get_output_port_x_desired_u().size() <<
-                 ") -> pid(0) (sz " << pid_controller->get_input_port(0).size() << ")" << std::endl;
-
-  builder.Connect(qp_controller_system->get_output_port_x_desired_u(), pid_controller->get_input_port(0));
+  builder.Connect(x_desired_u_input->get_output_port(), pid_controller->get_input_port(0));
 
   std::cout << " state_demult --/--> [q[u1:u6].v[u1:u6]]    ( <-- pid_multiplex)" << std::endl;
 
@@ -677,6 +707,20 @@ int main() {
   std::cout << " pid(0) -> input_multiplexer(0)" << std::endl;
 
   builder.Connect(pid_controller->get_output_port(0), input_multiplexer->get_input_port(0));
+
+
+  // // Final thing, get q_manip from state demult, wire it into qp_controller_system
+  // const auto x_manip_actual_multiplexer =
+  //     builder.template AddSystem<systems::Multiplexer<double>>(x_manip_actual_multiplex_input_sizes);
+
+  // std::cout << " state_demult --/--> x_manip_mult" << std::endl;
+  // for (size_t u=0; u<x_manip_actual_names_of_actuators.size(); ++u) {
+  //   builder.Connect(state_outputs_split->get_output_port(x_manip_actual_input_indices[u]), x_manip_actual_multiplexer->get_input_port(u));
+  // }
+
+  // std::cout << " x_manip_mult -> qp_controller_system(1)" << std::endl;
+  // builder.Connect(x_manip_actual_multiplexer->get_output_port(0), qp_controller_system->get_input_port_x_manip_actual());
+
 
 
 
