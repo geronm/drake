@@ -22,6 +22,8 @@ during stiction).
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_viewer2_comms.hpp"
@@ -39,6 +41,7 @@ during stiction).
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -85,6 +88,8 @@ DEFINE_double(q_manip_x, 10.0,
             "q_manip_desired x");
 DEFINE_double(q_manip_y, 0.0,
             "q_manip_desired y");
+
+typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
 namespace drake {
 namespace examples {
@@ -507,8 +512,45 @@ int main() {
   q_manip_desired(1) = FLAGS_q_manip_y;
   double dt = FLAGS_control_dt;
   double alpha = FLAGS_alpha;
+  // const auto q_manip_desired_input =
+  //     builder.template AddSystem<systems::ConstantVectorSource>(q_manip_desired);
+  // const double timespan_init = 4;
+  // auto traj_init_x =
+  //     PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
+  // SolutionResult result = dircol_traj.SolveTraj(
+  //     timespan_init, PiecewisePolynomialType(), traj_init_x);
+  // if (result != SolutionResult::kSolutionFound) {
+  //   std::cerr << "Result is an Error" << std::endl;
+  //   return 1;
+  // }
+
+  // const PiecewisePolynomialTrajectory pp_traj =
+  //     dircol_traj.ReconstructInputTrajectory();
+  // const PiecewisePolynomialTrajectory pp_xtraj =
+  //     dircol_traj.ReconstructStateTrajectory();
+  // auto input_source = builder.AddSystem<systems::TrajectorySource>(pp_traj);
+  const Eigen::Vector2d x0(10, 0);
+  const Eigen::Vector2d xG(FLAGS_q_manip_x, FLAGS_q_manip_y);
+  // const auto manip_x_traj = template PiecewisePolynomial<double>::FirstOrderHold({0,15,30},{0,0,2.5});
+  // const auto manip_y_traj = template PiecewisePolynomial<double>::FirstOrderHold({0,15,30},{0,0,2.5});
+  // const auto q_manip_x_desired_input =
+  //     builder.template AddSystem<systems::TrajectorySource>(manip_x_traj);
+  // const auto q_manip_y_desired_input =
+  //     builder.template AddSystem<systems::TrajectorySource>(manip_y_traj);
+  // std::vector<int> q_manip_input_sizes;
+  // q_manip_input_sizes.push_back(1);
+  // q_manip_input_sizes.push_back(1);
+  // const auto q_manip_desired_input =
+  //     builder.template AddSystem<systems::Multiplexer<double>>(q_manip_input_sizes);
+  // builder.Connect(q_manip_x_desired_input->get_output_port(),
+  //                 q_manip_desired_input->get_input_port(0));
+  // builder.Connect(q_manip_y_desired_input->get_output_port(),
+  //                 q_manip_desired_input->get_input_port(1));
+  const auto manip_pp = PiecewisePolynomialType::FirstOrderHold({0,15,30,40},{x0,x0,xG,xG});
+  const PiecewisePolynomialTrajectory manip_traj(manip_pp);
   const auto q_manip_desired_input =
-      builder.template AddSystem<systems::ConstantVectorSource>(q_manip_desired);
+      builder.template AddSystem<systems::TrajectorySource>(manip_traj);
+
   const auto qp_controller_system =
       builder.template AddSystem<QpControllerSystem>(*(tree.get()), dt, alpha, control_input_indices);
   

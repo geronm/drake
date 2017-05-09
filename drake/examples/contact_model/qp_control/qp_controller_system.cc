@@ -224,12 +224,12 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   }
   Eigen::MatrixXd d_pmanip_d_q = d_pmanip_d_pij * d_pij_d_q;
 
-  double kBound = 1.0;
-  for (size_t r=0; r < (size_t)(d_pmanip_d_q.rows()); r++) {
-    for (size_t c=0; c < (size_t)(d_pmanip_d_q.cols()); c++) {
-      d_pmanip_d_q(r,c) = std::max(std::min(d_pmanip_d_q(r,c), kBound), -kBound);
-    }
-  }
+  // double kBound = 1.0;
+  // for (size_t r=0; r < (size_t)(d_pmanip_d_q.rows()); r++) {
+  //   for (size_t c=0; c < (size_t)(d_pmanip_d_q.cols()); c++) {
+  //     d_pmanip_d_q(r,c) = std::max(std::min(d_pmanip_d_q(r,c), kBound), -kBound);
+  //   }
+  // }
 
   std::cout << "p_ij:" << std::endl;
   std::cout << p_ij.transpose() << std::endl;

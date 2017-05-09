@@ -212,12 +212,12 @@
   </link>
 
   <joint name="box_rotated" type="continuous">
-    <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
+    <origin xyz="10.0 0 0" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <parent link="box_y"/>
+    <parent link="base"/>
     <child link="box"/>
   </joint>
-  <link name="box_y" />
+<!--   <link name="box_y" />
   <joint name="box_y" type="prismatic">
     <origin xyz="0 0 0" rpy="0 0 0.7853982"/>
     <axis xyz="0 1 0"/>
@@ -230,8 +230,7 @@
     <axis xyz="1 0 0"/>
     <parent link="base"/>
     <child link="box_x"/>
-    <!-- <dynamics damping="0.5"/> -->
-  </joint>
+  </joint> -->
 
 
   <link name="finger1_paddle">
@@ -242,17 +241,17 @@
     <visual>
       <origin xyz="0 0 .2"/>
       <geometry>
-        <box size="8 .2 .2"/>
+        <box size="5.000 .2 .2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="4 0 .2"/>
+      <origin xyz="2.500 0 .2"/>
       <geometry>
         <box size=".2 2 .2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="-4 0 .2"/>
+      <origin xyz="-2.500 0 .2"/>
       <geometry>
         <box size=".2 2 .2"/>
       </geometry>
@@ -403,17 +402,17 @@
     <visual>
       <origin xyz="0 0 .2"/>
       <geometry>
-        <box size="8 .2 .2"/>
+        <box size="5.000 .2 .2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="4 0 .2"/>
+      <origin xyz="2.500 0 .2"/>
       <geometry>
         <box size=".2 2 .2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="-4 0 .2"/>
+      <origin xyz="-2.500 0 .2"/>
       <geometry>
         <box size=".2 2 .2"/>
       </geometry>
@@ -557,20 +556,20 @@
 
   <!-- current form tethers the two paddles together, hooking around one's edge to
        cause it to torque -->
-  <cable name="finger1_cable" min_length="14.00" max_length="14.00"> 
+  <cable name="finger1_cable" min_length="14.00" max_length="9.50"> 
     <terminator link="finger1_tensioner" xyz="0 0 0" />
-    <pulley link="finger1_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="finger1_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="finger1_paddle" xyz="-2.500 -1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="finger1_paddle" xyz="-2.500 1 0"  radius="0" axis="0 0 1"/>
     <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="6"/>
-    <terminator link="finger1_paddle" xyz="4 1 0"/>
+    <terminator link="finger1_paddle" xyz="2.500 1 0"/>
   </cable>
 
-  <cable name="finger2_cable" min_length="14.00" max_length="14.00"> 
+  <cable name="finger2_cable" min_length="14.00" max_length="9.50"> 
     <terminator link="finger2_tensioner" xyz="0 0 0" />
-    <pulley link="finger2_paddle" xyz="-4 -1 0"  radius="0" axis="0 0 1"/>
-    <pulley link="finger2_paddle" xyz="-4 1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="finger2_paddle" xyz="-2.500 -1 0"  radius="0" axis="0 0 1"/>
+    <pulley link="finger2_paddle" xyz="-2.500 1 0"  radius="0" axis="0 0 1"/>
     <pulley link="box" xyz=" 0.0  0.0 0" radius="1.416" axis="0 0 -1" number_of_faces="6"/>
-    <terminator link="finger2_paddle" xyz="4 1 0"/>
+    <terminator link="finger2_paddle" xyz="2.500 1 0"/>
   </cable>
 
   <!-- these shouldn't be necessary in the long run as we will eventually

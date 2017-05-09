@@ -283,25 +283,25 @@ int main() {
 
 
   // Find state parameters ofr q manip actual
-  std::vector<int> x_manip_actual_multiplex_input_sizes;
-  std::vector<int> x_manip_actual_input_indices;
-  std::vector<std::string> x_manip_actual_names_of_actuators;
-  x_manip_actual_names_of_actuators.push_back("box_x");
-  x_manip_actual_names_of_actuators.push_back("box_y");
-  x_manip_actual_names_of_actuators.push_back("box_xdot");
-  x_manip_actual_names_of_actuators.push_back("box_ydot");
+  // std::vector<int> x_manip_actual_multiplex_input_sizes;
+  // std::vector<int> x_manip_actual_input_indices;
+  // std::vector<std::string> x_manip_actual_names_of_actuators;
+  // x_manip_actual_names_of_actuators.push_back("box_x");
+  // x_manip_actual_names_of_actuators.push_back("box_y");
+  // x_manip_actual_names_of_actuators.push_back("box_xdot");
+  // x_manip_actual_names_of_actuators.push_back("box_ydot");
 
-  for (size_t u=0; u<x_manip_actual_names_of_actuators.size(); ++u) {
-    x_manip_actual_multiplex_input_sizes.push_back(1);
-    for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
-      if ((tree.get())->getStateName(i) == x_manip_actual_names_of_actuators[u]) {
-        x_manip_actual_input_indices.push_back(i);
-        break;
-      }
-    }
-    DRAKE_DEMAND(x_manip_actual_input_indices.size() == (u+1));
-    std::cout << "Found state port " << x_manip_actual_input_indices[u] << " for actuator name " << x_manip_actual_names_of_actuators[u] << std::endl;
-  }
+  // for (size_t u=0; u<x_manip_actual_names_of_actuators.size(); ++u) {
+  //   x_manip_actual_multiplex_input_sizes.push_back(1);
+  //   for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
+  //     if ((tree.get())->getStateName(i) == x_manip_actual_names_of_actuators[u]) {
+  //       x_manip_actual_input_indices.push_back(i);
+  //       break;
+  //     }
+  //   }
+  //   DRAKE_DEMAND(x_manip_actual_input_indices.size() == (u+1));
+  //   std::cout << "Found state port " << x_manip_actual_input_indices[u] << " for actuator name " << x_manip_actual_names_of_actuators[u] << std::endl;
+  // }
 
   // for (int i=0; i< (tree.get())->get_num_positions() + (tree.get())->get_num_velocities(); ++i) {
   //   std::cout << "tree state " << i << ": " << (tree.get())->getStateName(i);
@@ -318,17 +318,17 @@ int main() {
 
   Eigen::VectorXd q((tree.get())->get_num_positions());
   q.setZero();
-  q(0) = 0.0;
-  q(1) = 0.0;
-  q(2) = 0.0;
-  q(3) = 0.0;
-  q(4) = 0.0;
-  q(5) = 0.0;
-  q(6) = 0.0;
-  q(7) = 0.0;
-  q(8) = 0.0;
-  q(9) = 0.0;
-  q(10) = 0.0;
+  // q(0) = 0.0;
+  // q(1) = 0.0;
+  // q(2) = 0.0;
+  // q(3) = 0.0;
+  // q(4) = 0.0;
+  // q(5) = 0.0;
+  // q(6) = 0.0;
+  // q(7) = 0.0;
+  // q(8) = 0.0;
+  // q(9) = 0.0;
+  // q(10) = 0.0;
 
   std::cout << "q.transpose(): " << std::endl << q.transpose() << std::endl;
 
@@ -356,7 +356,7 @@ int main() {
   //  (tree.get())->doKinematics(cache, false);
 
     // Test some dynamic constraints stuff out on the tree.
-    // for (int i=0; i<=11; i++) {
+    // for (int i=0; i<=q.size(); i++) {
     //   std::cout << std::endl << i << std::endl;
     //   std::cout << (tree.get())->transformPoints(cache, Eigen::Vector3d::Zero(),
     //                                       i,
@@ -441,7 +441,7 @@ int main() {
     
     std::cout << "Empirical gradients: " << std::endl;
     double h=.00001;
-    for (int i=0; i<11; i++) {
+    for (int i=0; i<q.size(); i++) {
       q(i) += h;
       cache = (tree.get())->doKinematics(q);
       auto phi_q_di = cableConstraint.positionConstraints(cache);
