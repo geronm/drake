@@ -66,14 +66,14 @@ using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 
-static double getUnixTime(void)
-{
-    struct timespec tv;
+// static double getUnixTime(void)
+// {
+//     struct timespec tv;
 
-    if(clock_gettime(CLOCK_REALTIME, &tv) != 0) return 0;
+//     if(clock_gettime(CLOCK_REALTIME, &tv) != 0) return 0;
 
-    return (tv.tv_sec + (tv.tv_nsec / 1000000000.0));
-}
+//     return (tv.tv_sec + (tv.tv_nsec / 1000000000.0));
+// }
 
 std::unique_ptr<RigidBodyTreed> BuildTestTree() {
   std::unique_ptr<RigidBodyTreed> tree = std::make_unique<RigidBodyTreed>();
@@ -101,23 +101,23 @@ std::unique_ptr<RigidBodyTreed> BuildTestTree() {
   return tree;
 }
 
-void publishLine(const std::string json_str, std::vector<std::string> path, drake::lcm::DrakeLcm& lcm) {
-  long long int now = getUnixTime() * 1000 * 1000;
-  auto msg = lcmt_viewer2_comms();
-  msg.utime = now;
-  msg.format = "treeviewer_json";
-  msg.format_version_major = 1;
-  msg.format_version_minor = 0;
-  msg.data.clear();
-  for (auto& c : json_str) {
-    msg.data.push_back(c);
-    // std::cout << c;
-  }
-  // std::cout << std::endl << std::endl << std::endl;
-  msg.num_bytes = json_str.size();
-  // Use channel 0 for remote viewer communications.
-  lcm.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
-}
+// void publishLine(const std::string json_str, std::vector<std::string> path, drake::lcm::DrakeLcm& lcm) {
+//   long long int now = getUnixTime() * 1000 * 1000;
+//   auto msg = lcmt_viewer2_comms();
+//   msg.utime = now;
+//   msg.format = "treeviewer_json";
+//   msg.format_version_major = 1;
+//   msg.format_version_minor = 0;
+//   msg.data.clear();
+//   for (auto& c : json_str) {
+//     msg.data.push_back(c);
+//     // std::cout << c;
+//   }
+//   // std::cout << std::endl << std::endl << std::endl;
+//   msg.num_bytes = json_str.size();
+//   // Use channel 0 for remote viewer communications.
+//   lcm.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
+// }
 
 int main() {
   systems::DiagramBuilder<double> builder;

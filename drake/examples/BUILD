@@ -13,10 +13,8 @@ drake_cc_binary(
     srcs = ["simple_continuous_time_system.cc"],
     add_test_rule = 1,
     deps = [
-        "//drake/common",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:leaf_system",
-        "//drake/systems/framework:context",
     ],
 )
 

@@ -38,7 +38,7 @@ class QpControllerSystem : public systems::LeafSystem<double> {
 
   // // // // std::unique_ptr<ContinuousState<double>> AllocateContinuousState() const override;
 
-  std::unique_ptr<systems::DiscreteState<double>> AllocateDiscreteState() const override;
+  std::unique_ptr<systems::DiscreteValues<double>> AllocateDiscreteState() const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;

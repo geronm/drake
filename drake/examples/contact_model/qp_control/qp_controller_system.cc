@@ -139,7 +139,7 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   //     get_mutable_value<Eigen::VectorXd>(state, kAbstractStateIndexXDesiredU);
 
   // // // // systems::ContinuousState<double>* mutable_state = state->get_mutable_continuous_state();
-  // systems::DiscreteState<double>* mutable_state = state->get_mutable_discrete_state(0);
+  // systems::DiscreteValues<double>* mutable_state = state->get_mutable_discrete_state(0);
   //drake::systems::VectorBase<double>* state_vector = mutable_state->get_mutable_discrete_state();
   // Eigen::VectorXd state_vector_eigen(kXDesiredULength + kQManipLength);
   // for (size_t i=0; i<kXDesiredULength + kQManipLength; i++) {
@@ -330,7 +330,7 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 
   std::cout << "Print H" << std::endl;
   // Put state_vector_eigen back into state vector
-  state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->SetFromVector(state_vector_eigen);
+  state->get_mutable_discrete_state()->get_mutable_vector(0)->SetFromVector(state_vector_eigen);
 
   // Some prints
   std::cout << "current q_manip_desired: " << q_manip_desired.transpose() << std::endl;
@@ -359,11 +359,11 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 // // // //       0 /* num_z */);
 // // // // }
 
-std::unique_ptr<systems::DiscreteState<double>> QpControllerSystem::AllocateDiscreteState()
+std::unique_ptr<systems::DiscreteValues<double>> QpControllerSystem::AllocateDiscreteState()
     const {
   std::cout << "Doing AllocateDiscreteState..." << std::endl;
 
-  return std::make_unique<systems::DiscreteState<double>>(
+  return std::make_unique<systems::DiscreteValues<double>>(
       std::make_unique<systems::BasicVector<double>>(kXDesiredULength + kQManipLength));
 }
 

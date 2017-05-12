@@ -5,6 +5,10 @@
 //namespace qp_solve {
 
 int main(int argc, char* argv[]) {
+  if (argc > 0) {
+    std::cout << "Usage:" << std::endl << std::endl << argv[0] << std::endl << std::endl;
+  }
+
   using namespace drake;
 
   // These two vectors are constants which will shape

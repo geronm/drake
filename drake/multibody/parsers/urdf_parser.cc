@@ -741,15 +741,13 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
 }
 
-void ParsePulley( RigidBodyTree<double>* tree,
-                  std::vector<std::string>& pulley_link_names,
+void ParsePulley( std::vector<std::string>& pulley_link_names,
                   std::vector<Eigen::Vector3d>& pulley_xyz_offsets,
                   std::vector<Eigen::Vector3d>& pulley_axes,
                   std::vector<double>& pulley_radii,
                   std::vector<int>& pulley_num_wraps,
                   std::vector<int>& pulley_num_faces,
                   XMLElement* pulley_node,
-                  int model_instance_id,
                   bool is_terminator) {
   // Parse the XMLElement either as a terminal tag or as a pulley tag,
   // and append the resulting CableDynamicConstraint to pulleys.
@@ -841,8 +839,7 @@ void ParsePulley( RigidBodyTree<double>* tree,
 }
 
 
-void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
-                int model_instance_id) {
+void ParseCable(RigidBodyTree<double>* tree, XMLElement* node) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return;
 
@@ -878,8 +875,8 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
   {
     // Start with first terminator
     XMLElement* terminator_node = node->FirstChildElement("terminator");
-    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
-                    terminator_node, model_instance_id, true);
+    ParsePulley(pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
+                    terminator_node, true);
   }
 
   for (XMLElement* pulley_node = node->FirstChildElement("pulley");
@@ -893,8 +890,8 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
       }
     }
 
-    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
-                    pulley_node, model_instance_id,false);
+    ParsePulley(pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
+                    pulley_node, false);
   }
 
 
@@ -902,8 +899,8 @@ void ParseCable(RigidBodyTree<double>* tree, XMLElement* node,
     // End with second terminator
     XMLElement* terminator_node = node->FirstChildElement("terminator");
     terminator_node = terminator_node->NextSiblingElement("terminator");
-    ParsePulley(tree, pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
-                    terminator_node, model_instance_id, true);
+    ParsePulley(pulley_link_names, pulley_xyz_offsets, pulley_axes, pulley_radii, pulley_num_wraps, pulley_num_faces,
+                    terminator_node, true);
   }
 
   CableDynamicConstraint<double> cable_constraint(tree,
@@ -1313,7 +1310,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   // Parses the model's cable elements.
   for (XMLElement* cable_node = node->FirstChildElement("cable"); cable_node;
        cable_node = cable_node->NextSiblingElement("cable"))
-    ParseCable(tree, cable_node, model_instance_id);
+    ParseCable(tree, cable_node);
 
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
