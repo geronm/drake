@@ -49,6 +49,7 @@ INSTALLED_MODEL_PACKAGES = [
     "//drake/examples/quadrotor",
     "//drake/examples/simple_four_bar",
     "//drake/examples/valkyrie",
+    "//drake/examples/wheel_hands",
     "//drake/examples/zmp",
 ]
 
