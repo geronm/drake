@@ -194,7 +194,7 @@
             <length>0.02</length>
           </capsule>
         </geometry>
-        </visual>
+      </visual>
       <visual name='visual'>
         <pose frame=''>0.0 0.06 0 0 1.5708 1.5708</pose>
         <geometry>
@@ -339,7 +339,7 @@
             <length>0.02</length>
           </capsule>
         </geometry>
-        </visual>
+      </visual>
       <visual name='visual'>
         <pose frame=''>0.0 0.06 0 0 1.5708 1.5708</pose>
         <geometry>
