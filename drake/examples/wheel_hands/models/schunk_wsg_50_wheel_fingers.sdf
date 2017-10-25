@@ -467,7 +467,11 @@
         <use_parent_model_frame>1</use_parent_model_frame>
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
-       <limit><effort>0</effort></limit>
+        <limit>
+          <stiffness>15000</stiffness>
+          <dissipation>50</dissipation>
+          <effort>10</effort>
+        </limit>
       </axis>
       <physics>
         <ode>
@@ -607,7 +611,11 @@
         <use_parent_model_frame>1</use_parent_model_frame>
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
-       <limit><effort>0</effort></limit>
+        <limit>
+          <stiffness>15000</stiffness>
+          <dissipation>50</dissipation>
+          <effort>10</effort>
+        </limit>
       </axis>
       <physics>
         <ode>

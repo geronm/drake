@@ -112,8 +112,8 @@ int main() {
           BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id));
   plant->set_name("plant");
 
-  // ASSERT_EQ(plant->get_num_actuators(), 2);
-  // ASSERT_EQ(plant->get_num_model_instances(), 3);
+  DRAKE_DEMAND(plant->get_num_actuators() == 4);
+  DRAKE_DEMAND(plant->get_num_model_instances() == 3);
 
   // Arbitrary contact parameters.
   const double kStiffness = 10000;
@@ -180,27 +180,22 @@ int main() {
 
   drake::log()->info("TEST Print D23842. Number input ports: {}", plant->get_input_size());
 
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 0, plant->get_rigid_body_tree().getStateName(0));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 1, plant->get_rigid_body_tree().getStateName(1));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 2, plant->get_rigid_body_tree().getStateName(2));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 3, plant->get_rigid_body_tree().getStateName(3));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 4, plant->get_rigid_body_tree().getStateName(4));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 5, plant->get_rigid_body_tree().getStateName(5));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 6, plant->get_rigid_body_tree().getStateName(6));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 7, plant->get_rigid_body_tree().getStateName(7));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 8, plant->get_rigid_body_tree().getStateName(8));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 9, plant->get_rigid_body_tree().getStateName(9));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 10, plant->get_rigid_body_tree().getStateName(10));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 11, plant->get_rigid_body_tree().getStateName(11));
-  drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", 12, plant->get_rigid_body_tree().getStateName(12));
+  for (int iii = 0; iii < 13; iii++) {
+    drake::log()->info("TEST Print ZX2342. State descriptor: {} {}", iii, plant->get_rigid_body_tree().getStateName(iii));
+  }
+  // for (int iii = 0; iii < plant->get_input_size(); iii++) {
+  //   drake::log()->info("TEST Print Oh843u. Input descriptor: {} {}", iii, plant->get_input_port(iii));
+  // }
+  drake::log()->info("Lifter num input ports: {}", plant->model_instance_actuator_command_input_port(lifter_instance_id).size());
+  drake::log()->info("Gripper num input ports: {}", plant->model_instance_actuator_command_input_port(gripper_instance_id).size());
 
   // Create a trajectory for grip force.
   // Settle the grip by the time the lift starts.
   std::vector<double> grip_breaks{0., kLiftStart - 0.1, kLiftStart};
   std::vector<Eigen::MatrixXd> grip_knots;
-  grip_knots.push_back(Vector1d(0));
-  grip_knots.push_back(Vector1d(0));
-  grip_knots.push_back(Vector1d(40));
+  grip_knots.push_back(Eigen::Vector3d(0., 0., 0.));
+  grip_knots.push_back(Eigen::Vector3d(0., 0., 0.));
+  grip_knots.push_back(Eigen::Vector3d(40.,  0.005,-0.005));
   PiecewisePolynomialTrajectory grip_trajectory(
       PiecewisePolynomial<double>::FirstOrderHold(grip_breaks, grip_knots));
   auto grip_source =
