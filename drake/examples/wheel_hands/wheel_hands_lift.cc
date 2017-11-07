@@ -213,7 +213,7 @@ int main() {
   // require `drake_visualizer` but it is convenient to have when debugging.
   drake::lcm::DrakeLcm lcm;
   auto viz_publisher = builder.template AddSystem<systems::DrakeVisualizer>(
-      plant->get_rigid_body_tree(), &lcm);
+      plant->get_rigid_body_tree(), &lcm, true);
   viz_publisher->set_name("visualization_publisher");
   builder.Connect(plant->state_output_port(),
                   viz_publisher->get_input_port(0));
@@ -420,6 +420,8 @@ int main() {
   // EXPECT_LT(kMeanSlipSpeed, kVStictionTolerance);
 
   std::cout << "EXPECTING LT: " << kMeanSlipSpeed << ", " << kVStictionTolerance << std::endl;
+
+  while (1) viz_publisher->ReplayCachedSimulation();
 
   return 0;
 }

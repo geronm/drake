@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<robot name="cylinder">
+  <link name="cylinder">
+    <inertial>
+      <mass value="0.125"/>
+      <!-- Inertia values were calculated to be consistent with the mass and
+           geometry size, assuming a uniform density. -->
+      <inertia ixx=".0014" ixy="0" ixz="0" iyy=".0014" iyz="0" izz=".0018"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <cylinder radius="0.03" length="0.04"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.03" length="0.04"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
