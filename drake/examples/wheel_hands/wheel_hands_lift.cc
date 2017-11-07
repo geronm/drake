@@ -49,7 +49,9 @@ using drake::systems::KinematicsResults;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
-const double kBoxInitZ = 0.076;
+const double kBoxInitZ = 0.085;
+const double kBoxInitRoll = 1.57079632;
+const double kBoxInitPitch = 0.0;
 
 std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
     int* lifter_instance_id, int* gripper_instance_id) {
@@ -87,9 +89,9 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   auto box_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,
-      Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d::Zero());
+      Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d(kBoxInitRoll, kBoxInitPitch, 0));
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow("drake/multibody/models/box_small.urdf"),
+      FindResourceOrThrow("drake/multibody/models/cylinder_flat.urdf"),
       multibody::joints::kQuaternion, box_frame, tree.get());
 
   drake::log()->info("TEST Print 612341.");
@@ -332,7 +334,7 @@ int main() {
   auto& interim_kinematics_results =
       state_output->get_data(kinematrics_results_index)
           ->GetValue<KinematicsResults<double>>();
-  const int box_index = tree.FindBodyIndex("box");
+  const int box_index = tree.FindBodyIndex("cylinder");
   Vector3d init_box_pos =
       interim_kinematics_results.get_body_position(box_index);
   const int finger_index = tree.FindBodyIndex("left_finger");

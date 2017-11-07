@@ -636,6 +636,7 @@ filegroup(
     srcs = [
         "models/box.urdf",
         "models/box_small.urdf",
+        "models/cylinder_flat.urdf",
     ],
 )
 
