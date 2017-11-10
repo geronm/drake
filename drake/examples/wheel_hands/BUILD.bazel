@@ -46,6 +46,7 @@ drake_cc_binary(
         "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:trajectory_source",
+        "//drake/systems/primitives:matrix_gain",
     ],
 )
 

@@ -36,6 +36,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/trajectory_source.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace examples {
@@ -46,6 +47,7 @@ using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
+using drake::systems::MatrixGain;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
@@ -244,11 +246,24 @@ int main() {
       builder.ExportOutput(plant->get_output_port(
           plant->kinematics_results_output_port().get_index()));
 
+  const RigidBodyTreed& tree = plant->get_rigid_body_tree();
+
+  // Get a matrix to take plant coordinates and output t
+  Eigen::MatrixXd plant_coordinate_tf =
+      Eigen::MatrixXd::Zero(4, plant->get_num_states());
+  MatrixGain<double>& plant_coordinate_tf_gain =
+      *builder.template AddSystem<MatrixGain<double>>(plant_coordinate_tf);
+
+  drake::log()->info("System transform matrix: {}", plant_coordinate_tf_gain.D());
+  drake::log()->info("Info: {}", 
+              plant->get_output_port(plant->kinematics_results_output_port().get_index()).size()
+          );
+
+
   // Set up the model and simulator and set their starting state.
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
   systems::Simulator<double> simulator(*model);
 
-  const RigidBodyTreed& tree = plant->get_rigid_body_tree();
 
   // Open the gripper.  Due to the number of links involved, this is
   // surprisingly complicated.
@@ -364,49 +379,7 @@ int main() {
                         final_output_data[link_index + num_movable_links]);
   }
 
-  // This is a bound on the expected behavior and implicitly defines what we
-  // consider to be "acceptable" stiction behavior.
-  //
-  // In perfect stiction, once the gripper grabs the box, the box should undergo
-  // the exact same transformation as the gripper. To measure this, we've
-  // captured the position of the box and one of the fingers at the moment a
-  // secure grip is made -- or the best approximation of that moment -- the end
-  // of the gripping trajectory.
-  //
-  // At the end of the simulation, we measure the position of the finger again.
-  // We then measure the displacement of the finger and apply that same
-  // displacement to the box to represent the ideal stiction position of the
-  // box. (NOTE: This assumes that there is no *rotational* displacement on the
-  // gripper.)
-  //
-  // Based on this ideal end position, we compute the difference between ideal
-  // and actual final position. The _mean slip speed_ is that difference
-  // divided by the simulation duration. Successful simulation means that
-  // the box will have slipped at a rate no greater than that specified by
-  // kVStictionTolerance.
-  //
-  // Note that this isn't a *definitive* metric.  It's an attempt at a
-  // quantitative metric to indicate that the behavior lies with in an expected
-  // qualitative threshold. Ideally, the relative velocities between two
-  // contacting bodies *at the point of contact* would be evaluated at
-  // every time step. This is an approximation of that appropriate to a big-
-  // picture, what-is-the-end-result view.
-  //
-  // The approximation will introduce some error from various sources:
-  //   - We are looking at the overall displacement of the center of mass and
-  //     not its actual trajectory (which is more likely an arc).  However, for
-  //     small curves, the chord is a reasonable approximation of the arc.
-  //   - The stiction model doesn't *actually* guarantee the slip velocity of
-  //     the body origin; it guarantees the speed of the contact points. Given
-  //     a long enough lever arm, the disparity between speeds at those to
-  //     locations can be significant.  However, this is a small scale problem
-  //     with multiple points of contact which would help reduce the lever
-  //     effect, so this approximation isn't particularly destructive.
-  //   - We allow a fair amount of slippage (at a rate of 0.01 m/s for a box
-  //     whose scale is on the same order of magnitude).  This is a testing
-  //     expediency to allow for timely execution.  This does not *prove* that
-  //     the behavior is correct for smaller thresholds (and the corresponding
-  //     more precise integrator settings).
+  // Some computations regarding the final gripper / manipuland pose.
 
   // Compute expected final position and compare with observed final position.
   auto& final_kinematics_results =
