@@ -191,6 +191,8 @@ int main() {
   drake::log()->info("Lifter num input ports: {}", plant->model_instance_actuator_command_input_port(lifter_instance_id).size());
   drake::log()->info("Gripper num input ports: {}", plant->model_instance_actuator_command_input_port(gripper_instance_id).size());
 
+  // drake::log()->info("Tree state size: {}", plant->get_rigid_body_tree().)
+
   // Create a trajectory for grip force.
   // Settle the grip by the time the lift starts.
   std::vector<double> grip_breaks{0., kLiftStart - 0.1, kLiftStart};
@@ -261,6 +263,10 @@ int main() {
   auto positions = tree.computePositionNameToIndexMap();
   // ASSERT_EQ(positions["left_finger_sliding_joint"], 1);
 
+  for (int iii = 4; iii < tree.get_num_positions() + tree.get_num_velocities(); iii++) {
+    drake::log()->info("State {} has name {}", iii, tree.getStateName(iii));
+  }
+
   // The values below were extracted from the positions corresponding
   // to an open gripper.  Dumping them here is significantly more
   // magic than I (sam.creasey) would like.  If you find yourself
@@ -298,13 +304,13 @@ int main() {
   // 11 base_qw
   // 12 base_qx
 
-  plant_initial_state(1) = -0.0550667;
-  plant_initial_state(2) = 0.0;
-  plant_initial_state(3) = 0.009759; // plant_initial_state(2) = 0.009759;
-  plant_initial_state(4) = 1.27982; // plant_initial_state(3) = 1.27982;
-  plant_initial_state(5) = 0.0550667; // plant_initial_state(4) = 0.0550667;
-  plant_initial_state(6) = 0.0;
-  plant_initial_state(7) = 0.009759; // plant_initial_state(5) = 0.009759;
+  plant_initial_state(positions["left_finger_sliding_joint"]) = -0.0550667;
+  plant_initial_state(positions["left_finger_roller_joint"]) = 0.0;
+  plant_initial_state(positions["left_finger_push"]) = 0.009759;
+  plant_initial_state(positions["nonphysical_rotor_mount"]) = 1.27982;
+  plant_initial_state(positions["right_finger_sliding_joint"]) = 0.0550667;
+  plant_initial_state(positions["right_finger_roller_joint"]) = 0.0;
+  plant_initial_state(positions["right_finger_push"]) = 0.009759;
 
   // plant_initial_state(1) = -0.0550667;
   // plant_initial_state(2) = 0.009759;

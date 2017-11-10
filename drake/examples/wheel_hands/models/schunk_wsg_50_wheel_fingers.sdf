@@ -470,7 +470,7 @@
         <limit>
           <stiffness>15000</stiffness>
           <dissipation>50</dissipation>
-          <effort>10</effort>
+          <effort>10000</effort>
         </limit>
       </axis>
       <physics>
@@ -614,7 +614,7 @@
         <limit>
           <stiffness>15000</stiffness>
           <dissipation>50</dissipation>
-          <effort>10</effort>
+          <effort>10000</effort>
         </limit>
       </axis>
       <physics>
