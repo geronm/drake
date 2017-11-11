@@ -34,9 +34,11 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/primitives/trajectory_source.h"
 
 namespace drake {
 namespace examples {
@@ -91,7 +93,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   auto box_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,
-      Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d(kBoxInitRoll, kBoxInitPitch, 0));
+      Eigen::Vector3d(0, 0.005, kBoxInitZ), Eigen::Vector3d(kBoxInitRoll, kBoxInitPitch, 0));
   parsers::urdf::AddModelInstanceFromUrdfFile(
       FindResourceOrThrow("drake/multibody/models/cylinder_flat.urdf"),
       multibody::joints::kQuaternion, box_frame, tree.get());
@@ -145,6 +147,20 @@ int main() {
           lifting_input_port, lifting_output_port,
           lift_kp, lift_ki, lift_kd, &builder);
 
+  // Immediately rename the generic "pid_controller" and "input_adder"
+  for (unsigned int jjj=0; jjj < builder.GetMutableSystems().size(); jjj++) {
+    if (builder.GetMutableSystems()[jjj]->get_name() == "pid_controller") {
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+      builder.GetMutableSystems()[jjj]->set_name("lifter_pid_controller");
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+    }
+    if (builder.GetMutableSystems()[jjj]->get_name() == "input_adder") {
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+      builder.GetMutableSystems()[jjj]->set_name("lifter_input_adder");
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+    }
+  }
+
   drake::log()->info("TEST Print 143163.");
 
   auto zero_source =
@@ -193,23 +209,172 @@ int main() {
   drake::log()->info("Lifter num input ports: {}", plant->model_instance_actuator_command_input_port(lifter_instance_id).size());
   drake::log()->info("Gripper num input ports: {}", plant->model_instance_actuator_command_input_port(gripper_instance_id).size());
 
-  // drake::log()->info("Tree state size: {}", plant->get_rigid_body_tree().)
+  const RigidBodyTreed& tree = plant->get_rigid_body_tree();
+  auto positions = tree.computePositionNameToIndexMap();
+
+  for (int iii = 0; iii < tree.get_num_positions() + tree.get_num_velocities(); iii++) {
+    drake::log()->info("State {} has name {}", iii, tree.getStateName(iii));
+  }
+
+
+
+
+
+
+
+
+
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+    //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+    //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+    //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+
+
+
+
+  // The schunk gripper will exert a constant squeezing force
+  // on the manipuland. Meanwhile, the roller fingers will
+  // be PID controlled to maintain a fixed location on the
+  // surface of the manipuland.
+  //
+  // We splice together these input ports on the schunk
+  // model, using a Multiplexer system
+
+
+  // Create multiplexer. Our system now has two identical input ports,
+  // which combine additively to provide input to the gripper
+  // actuators.
+  std::vector<int> multiplexer_input_sizes{1, 2};
+  systems::Multiplexer<double>& multiplexer =
+      *builder.template AddSystem<systems::Multiplexer<double>>(multiplexer_input_sizes);
+  builder.Connect(multiplexer.get_output_port(0),
+                  plant->model_instance_actuator_command_input_port(
+                      gripper_instance_id));
+
+  drake::log()->info("TEST Print A11234.");
 
   // Create a trajectory for grip force.
   // Settle the grip by the time the lift starts.
   std::vector<double> grip_breaks{0., kLiftStart - 0.1, kLiftStart};
   std::vector<Eigen::MatrixXd> grip_knots;
-  grip_knots.push_back(Eigen::Vector3d(0., 0., 0.));
-  grip_knots.push_back(Eigen::Vector3d(0., 0., 0.));
-  grip_knots.push_back(Eigen::Vector3d(40.,  0.005,-0.005));
+  grip_knots.push_back(Vector1d(0. ));
+  grip_knots.push_back(Vector1d(0. ));
+  grip_knots.push_back(Vector1d(40.));
   PiecewisePolynomialTrajectory grip_trajectory(
       PiecewisePolynomial<double>::FirstOrderHold(grip_breaks, grip_knots));
   auto grip_source =
       builder.AddSystem<systems::TrajectorySource>(grip_trajectory);
   grip_source->set_name("grip_source");
   builder.Connect(grip_source->get_output_port(),
-                  plant->model_instance_actuator_command_input_port(
-                      gripper_instance_id));
+                  multiplexer.get_input_port(0));
+
+  drake::log()->info("TEST Print S11234.");
+
+  // Create a trajectory for finger position/velocity
+  // command.
+  std::vector<double> finger_command_breaks{0., kLiftStart};
+  std::vector<Eigen::MatrixXd> finger_command_knots;
+  finger_command_knots.push_back(Eigen::VectorXd::Zero(4));
+  finger_command_knots.push_back(Eigen::VectorXd::Zero(4));
+  PiecewisePolynomialTrajectory finger_command_trajectory(
+      PiecewisePolynomial<double>::FirstOrderHold(finger_command_breaks, finger_command_knots));
+  auto finger_command_source =
+      builder.AddSystem<systems::TrajectorySource>(finger_command_trajectory);
+  finger_command_source->set_name("finger_command_source");
+
+  drake::log()->info("TEST Print D11234.");
+
+  // Build a PID controller for fingers
+
+  // Constants chosen arbitrarily.
+  const Eigen::Vector2d finger_kp(300.,300.);
+  const Eigen::Vector2d finger_ki(0.  ,0.  );
+  const Eigen::Vector2d finger_kd(5.  ,5.  );
+
+  // Choose the ports which will be PID controlled. In this
+  // case, one of the Multiplexer inputs and the Plant's output.
+  const auto& finger_pid_input_port =
+      multiplexer.get_input_port(1);
+  // const auto& gripper_full_state_output_port =
+  //     plant->model_instance_state_output_port(gripper_instance_id);
+
+  // Get a matrix to take plant state and select only
+  // finger state readings.
+
+  // Want 1 & 5 (left_finger_roller_jointdot & right_finger_roller_jointdot)
+  Eigen::MatrixXd gripper_pid_state_selector =
+      Eigen::MatrixXd::Zero(2*2, 7*2);
+  gripper_pid_state_selector(2*0+0, 7*0+1) = 1.0;
+  gripper_pid_state_selector(2*0+1, 7*0+5) = 1.0;
+  gripper_pid_state_selector(2*1+0, 7*1+1) = 1.0;
+  gripper_pid_state_selector(2*1+1, 7*1+5) = 1.0;
+  // MatrixGain<double>& gripper_pid_state_selector_gain =
+  //     *builder.template AddSystem<MatrixGain<double>>(gripper_pid_state_selector);
+  // builder.Connect(gripper_full_state_output_port,
+  //                 gripper_pid_state_selector_gain.get_input_port());
+  // const auto& finger_pid_output_port =
+  //     gripper_pid_state_selector_gain.get_output_port();
+  const auto& finger_pid_output_port =
+      plant->model_instance_state_output_port(gripper_instance_id);
+
+  drake::log()->info("Number 1: {}.", finger_pid_input_port.size());
+  drake::log()->info("Number 2: {}.", finger_pid_output_port.size());
+  drake::log()->info("Number 3: {}.", gripper_pid_state_selector.rows());
+  drake::log()->info("Number 4: {}.", gripper_pid_state_selector.cols());
+  drake::log()->info("Number 5: {}.", 2);
+  drake::log()->info("Number 6: {}.", 4);
+
+  auto gripper_pid_ports =
+      systems::controllers::PidControlledSystem<double>::ConnectController(
+          finger_pid_input_port, finger_pid_output_port,
+          gripper_pid_state_selector,
+          finger_kp, finger_ki, finger_kd,
+          &builder);
+
+  // Immediately rename the generic "pid_controller" and "input_adder"
+  for (unsigned int jjj=0; jjj < builder.GetMutableSystems().size(); jjj++) {
+    if (builder.GetMutableSystems()[jjj]->get_name() == "pid_controller") {
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+      builder.GetMutableSystems()[jjj]->set_name("gripper_pid_controller");
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+    }
+    if (builder.GetMutableSystems()[jjj]->get_name() == "input_adder") {
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+      builder.GetMutableSystems()[jjj]->set_name("gripper_input_adder");
+      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+    }
+  }
+
+  // gripper_pid_ports.control_input_port.get_system()->set_name("finger_input_adder");
+  // gripper_pid_ports.state_input_port.get_system()->set_name("finger_pid_controller");
+  drake::log()->info("Ctrl input port system name: {}", gripper_pid_ports.control_input_port.get_system()->get_name());
+  drake::log()->info("State input port system name: {}", gripper_pid_ports.state_input_port.get_system()->get_name());
+
+  drake::log()->info("TEST Print F11234.");
+
+  auto zero_source_2 =
+      builder.AddSystem<systems::ConstantVectorSource<double>>(
+          Eigen::VectorXd::Zero(2));
+  zero_source_2->set_name("zero2");
+  auto zero_source_4 =
+      builder.AddSystem<systems::ConstantVectorSource<double>>(
+          Eigen::VectorXd::Zero(4));
+  zero_source_4->set_name("zero4");
+  builder.Connect(zero_source_2->get_output_port(),
+                  gripper_pid_ports.control_input_port);
+  builder.Connect(zero_source_4->get_output_port(),
+                  gripper_pid_ports.state_input_port);
+
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+    //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+    //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+    //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
+  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
 
   drake::log()->info("TEST Print R09987.");
 
@@ -246,15 +411,7 @@ int main() {
       builder.ExportOutput(plant->get_output_port(
           plant->kinematics_results_output_port().get_index()));
 
-  const RigidBodyTreed& tree = plant->get_rigid_body_tree();
-
-  // Get a matrix to take plant coordinates and output t
-  Eigen::MatrixXd plant_coordinate_tf =
-      Eigen::MatrixXd::Zero(4, plant->get_num_states());
-  MatrixGain<double>& plant_coordinate_tf_gain =
-      *builder.template AddSystem<MatrixGain<double>>(plant_coordinate_tf);
-
-  drake::log()->info("System transform matrix: {}", plant_coordinate_tf_gain.D());
+  drake::log()->info("System transform matrix:\n{}", gripper_pid_state_selector);
   drake::log()->info("Info: {}", 
               plant->get_output_port(plant->kinematics_results_output_port().get_index()).size()
           );
@@ -275,12 +432,14 @@ int main() {
   plant_initial_state.head(plant->get_num_positions())
       = tree.getZeroConfiguration();
 
-  auto positions = tree.computePositionNameToIndexMap();
-  // ASSERT_EQ(positions["left_finger_sliding_joint"], 1);
 
-  for (int iii = 4; iii < tree.get_num_positions() + tree.get_num_velocities(); iii++) {
-    drake::log()->info("State {} has name {}", iii, tree.getStateName(iii));
-  }
+
+
+
+
+
+
+  // ASSERT_EQ(positions["left_finger_sliding_joint"], 1);
 
   // The values below were extracted from the positions corresponding
   // to an open gripper.  Dumping them here is significantly more
