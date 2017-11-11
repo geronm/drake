@@ -1,4 +1,4 @@
-#include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
+#include "drake/examples/wheel_hands/simulated_schunk_wsg_system.h"
 
 #include <utility>
 

@@ -41,6 +41,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
+        ":simulated_schunk_wsg_system",
         "//drake/systems/analysis",
         "//drake/systems/controllers:pid_controlled_system",
         "//drake/systems/framework:diagram_builder",
