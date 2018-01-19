@@ -347,9 +347,12 @@ int main() {
 
   auto gripper_pid_ports =
       systems::controllers::PidControlledSystem<double>::ConnectController(
-          finger_pid_input_port, finger_pid_output_port,
+          finger_pid_input_port,
+          finger_pid_output_port,
           gripper_pid_state_selector,
-          finger_kp, finger_ki, finger_kd,
+          finger_kp,
+          finger_ki,
+          finger_kd,
           &builder);
 
   // Immediately rename the generic "pid_controller" and "input_adder"
@@ -495,6 +498,36 @@ int main() {
   // 10 base_z
   // 11 base_qw
   // 12 base_qx
+  //
+  // State  0 has name lift_joint
+  // State  1 has name left_finger_sliding_joint
+  // State  2 has name left_finger_roller_joint
+  // State  3 has name left_finger_push
+  // State  4 has name nonphysical_rotor_mount
+  // State  5 has name right_finger_sliding_joint
+  // State  6 has name right_finger_roller_joint
+  // State  7 has name right_finger_push
+  // State  8 has name base_x
+  // State  9 has name base_y
+  // State 10 has name base_z
+  // State 11 has name base_qw
+  // State 12 has name base_qx
+  // State 13 has name base_qy
+  // State 14 has name base_qz
+  // State 15 has name lift_jointdot
+  // State 16 has name left_finger_sliding_jointdot
+  // State 17 has name left_finger_roller_jointdot
+  // State 18 has name left_finger_pushdot
+  // State 19 has name nonphysical_rotor_mountdot
+  // State 20 has name right_finger_sliding_jointdot
+  // State 21 has name right_finger_roller_jointdot
+  // State 22 has name right_finger_pushdot
+  // State 23 has name base_wx
+  // State 24 has name base_wy
+  // State 25 has name base_wz
+  // State 26 has name base_vx
+  // State 27 has name base_vy
+  // State 28 has name base_vz
 
   plant_initial_state(positions["left_finger_sliding_joint"]) = -0.0550667;
   plant_initial_state(positions["left_finger_roller_joint"]) = 0.0;
