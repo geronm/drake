@@ -165,19 +165,19 @@ int main() {
           lifting_input_port, lifting_output_port,
           lift_kp, lift_ki, lift_kd, &builder);
 
-  // Immediately rename the generic "pid_controller" and "input_adder"
-  for (unsigned int jjj=0; jjj < builder.GetMutableSystems().size(); jjj++) {
-    if (builder.GetMutableSystems()[jjj]->get_name() == "pid_controller") {
-      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
-      builder.GetMutableSystems()[jjj]->set_name("lifter_pid_controller");
-      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
-    }
-    if (builder.GetMutableSystems()[jjj]->get_name() == "input_adder") {
-      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
-      builder.GetMutableSystems()[jjj]->set_name("lifter_input_adder");
-      drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
-    }
-  }
+  // // Immediately rename the generic "pid_controller" and "input_adder"
+  // for (unsigned int jjj=0; jjj < builder.GetMutableSystems().size(); jjj++) {
+  //   if (builder.GetMutableSystems()[jjj]->get_name() == "pid_controller") {
+  //     drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+  //     builder.GetMutableSystems()[jjj]->set_name("lifter_pid_controller");
+  //     drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+  //   }
+  //   if (builder.GetMutableSystems()[jjj]->get_name() == "input_adder") {
+  //     drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+  //     builder.GetMutableSystems()[jjj]->set_name("lifter_input_adder");
+  //     drake::log()->info(builder.GetMutableSystems()[jjj]->get_name());
+  //   }
+  // }
 
   drake::log()->info("TEST Print 143163.");
 
@@ -233,14 +233,6 @@ int main() {
   for (int iii = 0; iii < tree.get_num_positions() + tree.get_num_velocities(); iii++) {
     drake::log()->info("State {} has name {}", iii, tree.getStateName(iii));
   }
-
-
-
-
-
-
-
-
 
   //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
     //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
@@ -373,8 +365,45 @@ int main() {
   // gripper_pid_ports.state_input_port.get_system()->set_name("finger_pid_controller");
   drake::log()->info("Ctrl input port system name: {}", gripper_pid_ports.control_input_port.get_system()->get_name());
   drake::log()->info("State input port system name: {}", gripper_pid_ports.state_input_port.get_system()->get_name());
-
   drake::log()->info("TEST Print F11234.");
+
+
+  drake::log()->info(plant->state_output_port().size());
+  drake::log()->info(plant->get_num_positions());
+  drake::log()->info(plant->get_num_velocities());
+
+  // State  0 has name lift_joint
+  // State 10 has name base_z
+  // State 15 has name lift_jointdot
+  // State 28 has name base_vz
+
+
+  // Produce the Outer PID Controller
+  //
+  //  y_desired --+--> theta_dot --> integrator --> theta_command --> [Inner PID System] ----> y
+  //              |_______________________________________________________________________|
+  //
+  Eigen::MatrixXd state_to_control_state_transform_matrix =
+      Eigen::MatrixXd::Zero(2, 29);
+  state_to_control_state_transform_matrix(0,  0) = 1.0;  // "y"
+  state_to_control_state_transform_matrix(0, 10) = -1.0; //
+  state_to_control_state_transform_matrix(1, 15) = 1.0;  // "ydot"
+  state_to_control_state_transform_matrix(1, 28) = -1.0; //
+  auto& state_to_control_state_transform =
+      *builder.template AddSystem<systems::MatrixGain<double>>(state_to_control_state_transform_matrix);
+  builder.Connect(plant->state_output_port(),
+                  state_to_control_state_transform.get_input_port());
+
+
+  // auto theta_pid_ports = TODO FIX MY ARGUMENTS
+  //     systems::controllers::PidControlledSystem<double>::ConnectController(
+  //         finger_pid_input_port,
+  //         finger_pid_output_port,
+  //         gripper_pid_state_selector,
+  //         finger_kp,
+  //         finger_ki,
+  //         finger_kd,
+  //         &builder);
 
   auto zero_source_2 =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
