@@ -15,6 +15,8 @@
 
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
@@ -35,8 +37,9 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/adder.h"
-#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
@@ -45,11 +48,16 @@ namespace examples {
 namespace wheel_hands {
 // namespace {
 
+DEFINE_double(tp, 30., "Proportional constant for theta PID controller");
+DEFINE_double(td, 0., "Derivative constant for theta PID controller");
+DEFINE_double(ti, 100., "Integral constant for theta PID controller");
+
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
 using drake::systems::MatrixGain;
+using drake::systems::Integrator;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
@@ -298,6 +306,9 @@ int main() {
   drake::log()->info("TEST Print D11234.");
 
   // Build a PID controller for fingers
+  //
+  // State will be [theta1, theta2, theta1_dot, theta2_dot]
+  // Input will be [torque1, torque2]
 
   // Constants chosen arbitrarily.
   const Eigen::Vector2d finger_kp(300.,300.);
@@ -378,10 +389,12 @@ int main() {
   // State 28 has name base_vz
 
 
+  // |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+  //
   // Produce the Outer PID Controller
   //
-  //  y_desired --+--> theta_dot --> integrator --> theta_command --> [Inner PID System] ----> y
-  //              |_______________________________________________________________________|
+  //  y_desired --+--> thetadot_c --> [integrator] --> [splitter] --> thetas_c --> [Inner PID System] --> [matrix] -+--> y
+  //              |_________________________________________________________________________________________________|
   //
   Eigen::MatrixXd state_to_control_state_transform_matrix =
       Eigen::MatrixXd::Zero(2, 29);
@@ -391,32 +404,81 @@ int main() {
   state_to_control_state_transform_matrix(1, 28) = -1.0; //
   auto& state_to_control_state_transform =
       *builder.template AddSystem<systems::MatrixGain<double>>(state_to_control_state_transform_matrix);
+
+  // integrator
+  auto& set_point_integrator =
+      *builder.template AddSystem<systems::Integrator<double>>(1);
+
+  // splitter
+  Eigen::MatrixXd set_point_splitter_matrix =
+      Eigen::MatrixXd::Zero(4, 1);
+  set_point_splitter_matrix(0,  0) = -1.0;
+  set_point_splitter_matrix(1,  0) =  1.0;
+  set_point_splitter_matrix(2,  0) =  0.0;
+  set_point_splitter_matrix(3,  0) =  0.0;
+  auto& set_point_splitter =
+      *builder.template AddSystem<systems::MatrixGain<double>>(set_point_splitter_matrix);
+
+
+  // Constants chosen arbitrarily.
+  const Vector1d theta_kp(FLAGS_tp);
+  const Vector1d theta_ki(FLAGS_ti);
+  const Vector1d theta_kd(FLAGS_td);
+  // const Eigen::Vector2d theta_kp(300.);
+  // const Eigen::Vector2d theta_ki(0.  );
+  // const Eigen::Vector2d theta_kd(5.  );
+
+  // alias ports for clarity
+  const auto& theta_pid_plant_input_port =
+      set_point_integrator.get_input_port();
+  const auto& theta_pid_plant_output_port =
+      state_to_control_state_transform.get_output_port();
+
+  // wire up PID
+  auto theta_pid_ports =
+      systems::controllers::PidControlledSystem<double>::ConnectController(
+          theta_pid_plant_input_port,
+          theta_pid_plant_output_port,
+          theta_kp,
+          theta_ki,
+          theta_kd,
+          &builder);
+
+  // wiring
+  builder.Connect(set_point_splitter.get_output_port(),
+                  gripper_pid_ports.state_input_port);
   builder.Connect(plant->state_output_port(),
                   state_to_control_state_transform.get_input_port());
+  builder.Connect(set_point_integrator.get_output_port(),
+                  set_point_splitter.get_input_port());
 
+  auto zero_source_1a =
+      builder.AddSystem<systems::ConstantVectorSource<double>>(
+          Eigen::VectorXd::Zero(1));
+  auto zero_source_2a =
+      builder.AddSystem<systems::ConstantVectorSource<double>>(
+          Eigen::VectorXd::Zero(2));
+  builder.Connect(zero_source_1a->get_output_port(),
+                  theta_pid_ports.control_input_port);
+  builder.Connect(zero_source_2a->get_output_port(),
+                  theta_pid_ports.state_input_port);
 
-  // auto theta_pid_ports = TODO FIX MY ARGUMENTS
-  //     systems::controllers::PidControlledSystem<double>::ConnectController(
-  //         finger_pid_input_port,
-  //         finger_pid_output_port,
-  //         gripper_pid_state_selector,
-  //         finger_kp,
-  //         finger_ki,
-  //         finger_kd,
-  //         &builder);
+  //
+  //
+  // |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
   auto zero_source_2 =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
           Eigen::VectorXd::Zero(2));
   zero_source_2->set_name("zero2");
-  auto zero_source_4 =
-      builder.AddSystem<systems::ConstantVectorSource<double>>(
-          Eigen::VectorXd::Zero(4));
-  zero_source_4->set_name("zero4");
+  // auto zero_source_4 =
+  //     builder.AddSystem<systems::ConstantVectorSource<double>>(
+  //         Eigen::VectorXd::Zero(4));
+  // zero_source_4->set_name("zero4");
   builder.Connect(zero_source_2->get_output_port(),
                   gripper_pid_ports.control_input_port);
-  builder.Connect(zero_source_4->get_output_port(),
-                  gripper_pid_ports.state_input_port);
+  // builder.Connect(zero_source_4->get_output_port(),
+  //                 gripper_pid_ports.state_input_port);
 
   //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
     //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //  //
@@ -650,5 +712,6 @@ int main() {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::wheel_hands::main();
 }
