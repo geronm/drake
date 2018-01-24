@@ -56,8 +56,12 @@ DEFINE_double(td, 2.5, "Derivative constant for theta PID controller");
 DEFINE_double(fp, 3000., "Proportional constant for finger PID controller");
 DEFINE_double(fi, 0., "Integral constant for finger PID controller");
 DEFINE_double(fd, 50., "Derivative constant for finger PID controller");
+DEFINE_double(griprot, 1., "Rotation rate of fingers spinning the manipuland");
+DEFINE_double(simdur, 1., "Time to sim beyond the 5-second lift");
+
 
 using drake::systems::RungeKutta3Integrator;
+using drake::systems::Adder;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
@@ -400,8 +404,8 @@ int main() {
   //
   // Produce the Outer PID Controller
   //
-  //  y_desired --+--> thetadot_c --> [integrator] --> [splitter] --> thetas_c --> [Inner PID System] --> [matrix] -+--> y
-  //              |_________________________________________________________________________________________________|
+  //  y_desired --+--> thetadot_c --> [splitter+off] --> [integrator] --> thetas_c --> [Inner PID System] --> [matrix] -+--> y
+  //              |_____________________________________________________________________________________________________|
   //
   Eigen::MatrixXd state_to_control_state_transform_matrix =
       Eigen::MatrixXd::Zero(2, 29);
@@ -412,20 +416,27 @@ int main() {
   auto& state_to_control_state_transform =
       *builder.template AddSystem<systems::MatrixGain<double>>(state_to_control_state_transform_matrix);
 
+  // splitter (matrixgain + adder to make Cu + d)
+  Eigen::MatrixXd set_point_splitter_gain_matrix = Eigen::MatrixXd::Zero(4, 1);
+  set_point_splitter_gain_matrix(0,  0) = -1.0;
+  set_point_splitter_gain_matrix(1,  0) =  1.0;
+  set_point_splitter_gain_matrix(2,  0) =  0.0;
+  set_point_splitter_gain_matrix(3,  0) =  0.0;
+  auto& set_point_splitter_gain =
+      *builder.template AddSystem<systems::MatrixGain<double>>(set_point_splitter_gain_matrix);
+  Eigen::VectorXd set_point_splitter_offset_vector = Eigen::VectorXd::Zero(4);
+  set_point_splitter_offset_vector(0) =  FLAGS_griprot;
+  set_point_splitter_offset_vector(1) =  FLAGS_griprot;
+  set_point_splitter_offset_vector(2) =  0.0;
+  set_point_splitter_offset_vector(3) =  0.0;
+  auto& set_point_splitter_offset =
+      *builder.template AddSystem<systems::ConstantVectorSource<double>>(set_point_splitter_offset_vector);
+  auto& set_point_splitter =
+      *builder.template AddSystem<systems::Adder<double>>(2,4); // 2-inputs, size 4 each
+
   // integrator
   auto& set_point_integrator =
-      *builder.template AddSystem<systems::Integrator<double>>(1);
-
-  // splitter
-  Eigen::MatrixXd set_point_splitter_matrix =
-      Eigen::MatrixXd::Zero(4, 1);
-  set_point_splitter_matrix(0,  0) = -1.0;
-  set_point_splitter_matrix(1,  0) =  1.0;
-  set_point_splitter_matrix(2,  0) =  0.0;
-  set_point_splitter_matrix(3,  0) =  0.0;
-  auto& set_point_splitter =
-      *builder.template AddSystem<systems::MatrixGain<double>>(set_point_splitter_matrix);
-
+      *builder.template AddSystem<systems::Integrator<double>>(4);
 
   // Constants chosen arbitrarily.
   const Vector1d theta_kp(FLAGS_tp);
@@ -437,7 +448,7 @@ int main() {
 
   // alias ports for clarity
   const auto& theta_pid_plant_input_port =
-      set_point_integrator.get_input_port();
+      set_point_splitter_gain.get_input_port();
   const auto& theta_pid_plant_output_port =
       state_to_control_state_transform.get_output_port();
 
@@ -452,12 +463,17 @@ int main() {
           &builder);
 
   // wiring
-  builder.Connect(set_point_splitter.get_output_port(),
+  builder.Connect(set_point_splitter_gain.get_output_port(),
+                  set_point_splitter.get_input_port(0));
+  builder.Connect(set_point_splitter_offset.get_output_port(),
+                  set_point_splitter.get_input_port(1));
+
+  builder.Connect(set_point_integrator.get_output_port(),
                   gripper_pid_ports.state_input_port);
   builder.Connect(plant->state_output_port(),
                   state_to_control_state_transform.get_input_port());
-  builder.Connect(set_point_integrator.get_output_port(),
-                  set_point_splitter.get_input_port());
+  builder.Connect(set_point_splitter.get_output_port(),
+                  set_point_integrator.get_input_port());
 
   auto zero_source_1a =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
@@ -667,8 +683,8 @@ int main() {
 
   simulator.Initialize();
 
-  // Simulate to one second beyond the trajectory motion.
-  const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
+  // Simulate to N seconds beyond the trajectory motion.
+  const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + FLAGS_simdur;
 
   // Simulation in two pieces -- see notes below on the test for details.
   simulator.StepTo(kLiftStart);
