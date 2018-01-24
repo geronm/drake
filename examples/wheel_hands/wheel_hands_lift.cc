@@ -50,12 +50,12 @@ namespace examples {
 namespace wheel_hands {
 // namespace {
 
-DEFINE_double(tp, 30., "Proportional constant for theta PID controller");
+DEFINE_double(tp, 10.0, "Proportional constant for theta PID controller");
 DEFINE_double(ti, 0., "Integral constant for theta PID controller");
-DEFINE_double(td, 0., "Derivative constant for theta PID controller");
-DEFINE_double(fp, 300., "Proportional constant for finger PID controller");
+DEFINE_double(td, 2.5, "Derivative constant for theta PID controller");
+DEFINE_double(fp, 3000., "Proportional constant for finger PID controller");
 DEFINE_double(fi, 0., "Integral constant for finger PID controller");
-DEFINE_double(fd, 5., "Derivative constant for finger PID controller");
+DEFINE_double(fd, 50., "Derivative constant for finger PID controller");
 
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
