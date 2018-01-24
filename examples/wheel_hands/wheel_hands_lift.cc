@@ -405,8 +405,8 @@ int main() {
   //
   Eigen::MatrixXd state_to_control_state_transform_matrix =
       Eigen::MatrixXd::Zero(2, 29);
-  state_to_control_state_transform_matrix(0,  0) = 1.0;  // "y"
-  state_to_control_state_transform_matrix(0, 10) = -1.0; //
+  state_to_control_state_transform_matrix(0,  0) =  1.0;  // "y"
+  state_to_control_state_transform_matrix(0,  9) = -1.0; // DO NOT ask me why this is 9 and not 10!
   state_to_control_state_transform_matrix(1, 15) = 1.0;  // "ydot"
   state_to_control_state_transform_matrix(1, 28) = -1.0; //
   auto& state_to_control_state_transform =
@@ -530,11 +530,12 @@ int main() {
   //                 control_signal_logger.get_input_port());
 
   // control signal publishing
-  LcmtDrakeSignalTranslator control_signal_translator(2);
+  // LcmtDrakeSignalTranslator control_signal_translator(2);
+  LcmtDrakeSignalTranslator control_signal_translator(plant->state_output_port().size());
   auto& control_signal_publisher = *builder.AddSystem<LcmPublisherSystem>(
           "CONTROL_SIGNAL", control_signal_translator, &lcm);
   // control_signal_publisher.set_name("control_signal_publisher");
-  builder.Connect(theta_pid_plant_output_port,
+  builder.Connect(plant->state_output_port(), // theta_pid_plant_output_port,
                   control_signal_publisher.get_input_port(0));
 
   drake::log()->info("TEST Print Y28341238.");
