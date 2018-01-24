@@ -41,6 +41,7 @@
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
 namespace drake {
@@ -49,8 +50,11 @@ namespace wheel_hands {
 // namespace {
 
 DEFINE_double(tp, 30., "Proportional constant for theta PID controller");
+DEFINE_double(ti, 0., "Integral constant for theta PID controller");
 DEFINE_double(td, 0., "Derivative constant for theta PID controller");
-DEFINE_double(ti, 100., "Integral constant for theta PID controller");
+DEFINE_double(fp, 300., "Proportional constant for finger PID controller");
+DEFINE_double(fi, 0., "Integral constant for finger PID controller");
+DEFINE_double(fd, 5., "Derivative constant for finger PID controller");
 
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
@@ -58,6 +62,7 @@ using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
 using drake::systems::MatrixGain;
 using drake::systems::Integrator;
+using drake::systems::SignalLogger;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
@@ -311,9 +316,9 @@ int main() {
   // Input will be [torque1, torque2]
 
   // Constants chosen arbitrarily.
-  const Eigen::Vector2d finger_kp(300.,300.);
-  const Eigen::Vector2d finger_ki(0.  ,0.  );
-  const Eigen::Vector2d finger_kd(5.  ,5.  );
+  const Eigen::Vector2d finger_kp(FLAGS_fp, FLAGS_fp);
+  const Eigen::Vector2d finger_ki(FLAGS_fi, FLAGS_fi);
+  const Eigen::Vector2d finger_kd(FLAGS_fd, FLAGS_fd);
 
   // Choose the ports which will be PID controlled. In this
   // case, one of the Multiplexer inputs and the Plant's output.
@@ -516,6 +521,13 @@ int main() {
   builder.Connect(contact_viz.get_output_port(0),
                   contact_results_publisher.get_input_port(0));
 
+  // control signal logging
+  auto& control_signal_logger = *builder.AddSystem<SignalLogger<double>>(theta_pid_plant_output_port.size());
+  control_signal_logger.set_name("control_signal_logger");
+  // Contact results to lcm msg. 
+  builder.Connect(theta_pid_plant_output_port,
+                  control_signal_logger.get_input_port());
+
   const int plant_output_port = builder.ExportOutput(plant->get_output_port(0));
   // Expose the RBPlant kinematics results as a diagram output for body state
   // validation.
@@ -671,13 +683,21 @@ int main() {
   const auto final_output_data =
       state_output->get_vector_data(plant_output_port)->get_value();
 
-  drake::log()->debug("Final state:");
+  drake::log()->info("Final state:");
   const int num_movable_links = plant->get_num_positions();
   for (int link_index = 0; link_index < num_movable_links; link_index++) {
-    drake::log()->debug("  {} {}: {} (v={})",
+    drake::log()->info("  {} {}: {} (v={})",
                         link_index, tree.get_position_name(link_index),
                         final_output_data[link_index],
                         final_output_data[link_index + num_movable_links]);
+  }
+
+
+  drake::log()->info("Logged data size:\n {}", control_signal_logger.data().size());
+  drake::log()->info("Logged data shape:\n {} x {}", control_signal_logger.data().rows(), control_signal_logger.data().cols());
+  drake::log()->info("Logged data:\n");
+  for (int i = 0; i < control_signal_logger.data().cols(); i+=100) {
+    drake::log()->info("{}", control_signal_logger.data()(0, i));
   }
 
   // Some computations regarding the final gripper / manipuland pose.

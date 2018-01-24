@@ -50,6 +50,7 @@ drake_cc_binary(
         "//drake/systems/primitives:integrator",
         "//drake/systems/primitives:matrix_gain",
         "//drake/systems/primitives:multiplexer",
+        "//drake/systems/primitives:signal_logger",
         "//drake/systems/primitives:trajectory_source",
         "@gflags",
     ],
