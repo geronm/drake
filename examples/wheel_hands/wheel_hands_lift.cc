@@ -36,6 +36,7 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/integrator.h"
@@ -63,6 +64,7 @@ using drake::systems::KinematicsResults;
 using drake::systems::MatrixGain;
 using drake::systems::Integrator;
 using drake::systems::SignalLogger;
+using drake::systems::lcm::LcmtDrakeSignalTranslator;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
@@ -521,12 +523,21 @@ int main() {
   builder.Connect(contact_viz.get_output_port(0),
                   contact_results_publisher.get_input_port(0));
 
-  // control signal logging
-  auto& control_signal_logger = *builder.AddSystem<SignalLogger<double>>(theta_pid_plant_output_port.size());
-  control_signal_logger.set_name("control_signal_logger");
-  // Contact results to lcm msg. 
+  // // control signal logging
+  // auto& control_signal_logger = *builder.AddSystem<SignalLogger<double>>(theta_pid_plant_output_port.size());
+  // control_signal_logger.set_name("control_signal_logger");
+  // builder.Connect(theta_pid_plant_output_port,
+  //                 control_signal_logger.get_input_port());
+
+  // control signal publishing
+  LcmtDrakeSignalTranslator control_signal_translator(2);
+  auto& control_signal_publisher = *builder.AddSystem<LcmPublisherSystem>(
+          "CONTROL_SIGNAL", control_signal_translator, &lcm);
+  // control_signal_publisher.set_name("control_signal_publisher");
   builder.Connect(theta_pid_plant_output_port,
-                  control_signal_logger.get_input_port());
+                  control_signal_publisher.get_input_port(0));
+
+  drake::log()->info("TEST Print Y28341238.");
 
   const int plant_output_port = builder.ExportOutput(plant->get_output_port(0));
   // Expose the RBPlant kinematics results as a diagram output for body state
@@ -693,12 +704,12 @@ int main() {
   }
 
 
-  drake::log()->info("Logged data size:\n {}", control_signal_logger.data().size());
-  drake::log()->info("Logged data shape:\n {} x {}", control_signal_logger.data().rows(), control_signal_logger.data().cols());
-  drake::log()->info("Logged data:\n");
-  for (int i = 0; i < control_signal_logger.data().cols(); i+=100) {
-    drake::log()->info("{}", control_signal_logger.data()(0, i));
-  }
+  // drake::log()->info("Logged data size:\n {}", control_signal_logger.data().size());
+  // drake::log()->info("Logged data shape:\n {} x {}", control_signal_logger.data().rows(), control_signal_logger.data().cols());
+  // drake::log()->info("Logged data:\n");
+  // for (int i = 0; i < control_signal_logger.data().cols(); i+=100) {
+  //   drake::log()->info("{}", control_signal_logger.data()(1, i));
+  // }
 
   // Some computations regarding the final gripper / manipuland pose.
 
@@ -719,7 +730,7 @@ int main() {
   const double kMeanSlipSpeed = distance / kLiftDuration;
   // EXPECT_LT(kMeanSlipSpeed, kVStictionTolerance);
 
-  std::cout << "EXPECTING LT: " << kMeanSlipSpeed << ", " << kVStictionTolerance << std::endl;
+  // std::cout << "EXPECTING LT: " << kMeanSlipSpeed << ", " << kVStictionTolerance << std::endl;
 
   while (1) viz_publisher->ReplayCachedSimulation();
 
